@@ -26,6 +26,9 @@ import urllib2
 import xml.etree.cElementTree as ElementTree
 from osc import conf, core
 
+G_OSCRC = '/etc/boss/build-service.conf'
+T_OSCRC = '/tmp/.oscrc'
+
 def flag2bool(flag):
     """
     flag2bool(flag) -> Boolean
@@ -81,8 +84,16 @@ class metafile:
 
 class BuildService():
     "Interface to Build Service API"
-    def __init__(self, apiurl=None):
-        conf.get_config()
+    def __init__(self, apiurl=None, oscrc=None):
+
+        if oscrc is None:
+            import shutil
+            # use the system wide global settings
+            # copy it to /tmp for chmod enable
+            shutil.copyfile(G_OSCRC, T_OSCRC)
+            oscrc = T_OSCRC
+
+        conf.get_config(oscrc)
         if apiurl:
             self.apiurl = apiurl
         else:

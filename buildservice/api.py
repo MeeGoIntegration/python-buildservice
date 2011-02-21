@@ -632,6 +632,48 @@ class BuildService():
             return False
         return True
 
+    def getProjectRepositories(self, project):
+        """
+        getProjectRepositories(project) -> list
+
+        Get a list of repositories in a project
+        """
+        repos = []
+        tree = ElementTree.fromstring(''.join(core.show_project_meta(self.apiurl, project)))
+        for repo in tree.findall('repository'):
+            repos.append(repo.get("name"))
+        return repos
+
+    def getRepositoryTargets(self, project, repository):
+        """
+        getRepositoryTargets(project, repository) -> list
+
+        Get a list of targets for a repository in a project
+        """
+        targets = []
+        tree = ElementTree.fromstring(''.join(core.show_project_meta(self.apiurl, project)))
+        for repo in tree.findall('repository'):
+            if repo.get("name") == repository:
+                for path in repo.findall("path"):
+                    targets.append("%s/%s" % (path.get("project"), path.get("repository")))
+        return targets
+
+    def getRepositoryArchs(self, project, repository):
+        """
+        getRepositoryArchs(project, repository) -> list
+
+        Get a list of architectures for a repository in a project
+        """
+        archs = []
+        tree = ElementTree.fromstring(''.join(core.show_project_meta(self.apiurl, project)))
+        for repo in tree.findall('repository'):
+            if repo.get("name") == repository:
+                for arch in repo.findall("arch"):
+                    archs.append("%s" % (arch.text))
+        return archs
+
+
+
 class ProjectFlags(object):
     """
     ProjectFlags(bs, project)

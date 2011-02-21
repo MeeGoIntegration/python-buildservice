@@ -595,6 +595,42 @@ class BuildService():
             return True
         return False
 
+    def getPackageChecksum(self, project, package, rev=None):
+        """
+        getPackageChecksum(self, project, package, rev=None) -> string
+
+        returns source md5 of a package
+        """
+        query = { 'expand' : 1 }
+        if rev:
+            query['rev'] = rev
+        else:
+            query['rev'] = 'latest'
+    
+        u = makeurl(self.apiurl, ['source', project, package], query=query)
+        f = http_GET(u)
+        root = ElementTree.parse(f).getroot()
+        return root.get("srcmd5")
+
+    def hasChanges(self, oprj, opkg, orev, tprj, tpkg):
+        """
+        hasChanges(self, oprj, opkg, orev, tprj, tpkg) -> Bool
+
+        Compares the source md5sum of the whole source and target packages
+        If target package does not exist, change is assumed.
+        Returns False if there is no change, otherwise returns True
+        """
+        try:
+            tsrcmd5 = getPackageChecksum(tprj, tpkg)
+        except HTTPError, e:
+            if e.code == 404:
+                return True
+            else:
+                raise
+        osrcmd5 = getPackageChecksum(oprj, opkg, rev=orev)
+        if osrcmd5 == tsrcmd5:
+            return False
+        return True
 
 class ProjectFlags(object):
     """

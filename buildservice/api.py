@@ -562,13 +562,38 @@ class BuildService():
         """
         return ProjectFlags(self, project)
 
-    def getEmail(self, userid):
+    def getUserEmail(self, user):
         """
-        getEmail(userid) -> string
+        getUserEmail(userid) -> string
 
         Get email of a user ID
         """
-        return core.get_user_data(self.apiurl, userid, "email")[0]
+        return self.getUserData(user, "email")[0]
+
+    def getProjectMaintainers(self, project):
+        """
+        getProjectMaintainers(project) -> list
+
+        Get a list of userids who are maintainers of a project
+        """
+        tree = ElementTree.fromstring(''.join(core.show_project_meta(self.apiurl,
+                                      project)))
+        maintainers = []
+        for person in tree.findall('person'):
+            if person.get('role') == "maintainer":
+                maintainers.append(person.get('userid'))
+        return maintainers
+
+    def isMaintainer(self, project, user):
+        """
+        isMaintainer(project, user) -> Bool
+
+        returns True if the user is a maintainer in the project False otherwise
+        """
+        maintainers = self.getProjectMaintainers(project)
+        if user in maintainers:
+            return True
+        return False
 
 
 class ProjectFlags(object):

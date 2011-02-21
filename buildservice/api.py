@@ -562,6 +562,14 @@ class BuildService():
         """
         return ProjectFlags(self, project)
 
+    def getEmail(self, userid):
+        """
+        getEmail(userid) -> string
+
+        Get email of a user ID
+        """
+        return core.get_user_data(self.apiurl, userid, "email")[0]
+
 
 class ProjectFlags(object):
     """

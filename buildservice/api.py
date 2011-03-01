@@ -672,6 +672,32 @@ class BuildService():
                     archs.append("%s" % (arch.text))
         return archs
 
+    def isPackageSucceeded(self, project, repository, pkg, arch):
+        results = core.get_package_results(self.piurl, project, pkg, 
+                                           repository = repository, arch=arch)
+        for result in results:
+            if result['code'] != "succeeded":
+                return False
+            return True
+
+    def getPackageDepends(self, project, repository, pkg, arch, query):
+        p = []
+        xml = core.get_dependson(self.apiurl, project, repository, arch, 
+                                 packages=[pkg], reverse=True)
+        tree =  ElementTree.fromstring(''.join(xml))
+        for package in tree.findall('package'):
+            for dep in package.findall(query):
+                p.append(dep.text)
+        return p
+
+    def getPackageSubpkgs(self, project, repository, pkg, arch):
+        return self.getPackageDepends(self, project, repository, pkg, arch,
+                "subpkg")
+
+    def getPackageReverseDepends(self, project, repository, pkg, arch):
+        return self.getPackageDepends(self, project, repository, pkg, arch,
+                "pkgdep")
+  
 
 
 class ProjectFlags(object):

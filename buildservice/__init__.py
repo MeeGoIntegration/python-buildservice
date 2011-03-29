@@ -565,6 +565,26 @@ class BuildService():
         """
         return ''.join(core.show_package_meta(self.apiurl, project, package))
 
+    def getPackageData(self, project, package, tag):
+        """
+        getPackageData(project, package, tag) -> list
+        Return a string list if node has text, else return the values dict list
+        """
+        data = []
+        tree = ElementTree.fromstring(self.getPackageMeta(project, package))
+        nodes = tree.findall(tag)
+        if nodes:
+            for node in nodes:
+                node_value = {}
+                for key in node.keys():
+                    node_value[key] = node.get(key)
+
+                if node_value:
+                    data.append(node_value)
+                else:
+                    data.append(node.text)
+        return data
+
     def projectFlags(self, project):
         """
         projectFlags(project) -> ProjectFlags

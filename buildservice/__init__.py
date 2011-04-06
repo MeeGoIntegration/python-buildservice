@@ -26,9 +26,6 @@ import urllib2
 import xml.etree.cElementTree as ElementTree
 from osc import conf, core
 
-G_OSCRC = '/etc/boss/build-service.conf'
-T_OSCRC = '/tmp/.oscrc'
-
 def flag2bool(flag):
     """
     flag2bool(flag) -> Boolean
@@ -86,14 +83,10 @@ class BuildService():
     "Interface to Build Service API"
     def __init__(self, apiurl=None, oscrc=None):
 
-        if oscrc is None:
-            import shutil
-            # use the system wide global settings
-            # copy it to /tmp for chmod enable
-            shutil.copyfile(G_OSCRC, T_OSCRC)
-            oscrc = T_OSCRC
-
-        conf.get_config(oscrc)
+        if oscrc:
+            conf.get_config(override_conffile = oscrc)
+        else:
+            conf.get_config()
         if apiurl:
             self.apiurl = apiurl
         else:
@@ -364,6 +357,22 @@ class BuildService():
                 code += ': ' + details.text
             status[target] = code
         return status
+
+    def getProjectDiff(self, prj):
+        packages = self.getPackageList(prj)
+        for src_package in packages:
+            src_fl = core.meta_get_filelist(self.apiurl, prj, src_package, verbose=True, expand=True, revision="latest")
+            print src_fl
+
+    def getPackageList(self, prj, deleted=None):
+        query = {}
+        if deleted:
+           query['deleted'] = 1
+
+        u = core.makeurl(self.apiurl, ['source', prj], query)
+        f = core.http_GET(u)
+        root = ElementTree.parse(f).getroot()
+        return [ node.get('name') for node in root.findall('entry') ]
 
     def getBinaryList(self, project, target, package):
         """

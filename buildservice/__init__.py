@@ -588,6 +588,19 @@ class BuildService():
                     data.append(node.text)
         return data
 
+    def deleteProject(self, project):
+        """
+        deleteProject(project)
+        
+        Delete the specific project
+        """
+        try:
+            core.delete_project(self.apiurl, project)
+        except Exception:
+            return False
+            
+        return True
+
     def getPackageMeta(self, project, package):
         """
         getPackageMeta(project, package) -> string
@@ -615,6 +628,19 @@ class BuildService():
                 else:
                     data.append(node.text)
         return data
+
+    def deletePackage(self, project, package):
+        """
+        deletePackage(project, package)
+        
+        Delete the specific package in project
+        """
+        try:
+            core.delete_package(self.apiurl, project, package)
+        except Exception:
+            return False
+            
+        return True
 
     def projectFlags(self, project):
         """

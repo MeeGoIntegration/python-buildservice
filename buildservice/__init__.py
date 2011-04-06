@@ -358,11 +358,13 @@ class BuildService():
             status[target] = code
         return status
 
-    def getProjectDiff(self, prj):
-        packages = self.getPackageList(prj)
+    def getProjectDiff(self, src_project, dst_project):
+        packages = self.getPackageList(src_project)
         for src_package in packages:
-            src_fl = core.meta_get_filelist(self.apiurl, prj, src_package, verbose=True, expand=True, revision="latest")
-            print src_fl
+            diff = core.server_diff(self.apiurl,
+                                dst_project, src_package, None,
+                                src_project, src_package, None, False)
+            print diff
 
     def getPackageList(self, prj, deleted=None):
         query = {}

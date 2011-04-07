@@ -571,6 +571,7 @@ class BuildService():
     def getProjectData(self, project, tag):
         """
         getProjectData(project, tag) -> list
+        
         Return a string list if node has text, else return the values dict list
         """
         data = []
@@ -592,6 +593,7 @@ class BuildService():
     def getProjectPersons(self, project, role):
         """
         getProjectPersons(project, role) -> list
+        
         Return a userid list in this project with this role
         """
         userids = []
@@ -601,6 +603,19 @@ class BuildService():
                 userids.append(person['userid'])
 
         return userids
+
+    def getProjectDevel(self, project):
+        """
+        getProjectDevel(project) -> tuple (devel_prj, devel_pkg)
+
+        Return the devel tuple of a project if it has the node, else return None
+        """
+        devels = self.getProjectData(project, 'devel')
+        for devel in devels:
+            if devel.has_key('project') and devel.has_key('package'):
+                return (devel['project'], devel['package'])
+
+        return None
 
     def deleteProject(self, project):
         """
@@ -626,6 +641,7 @@ class BuildService():
     def getPackageData(self, project, package, tag):
         """
         getPackageData(project, package, tag) -> list
+        
         Return a string list if node has text, else return the values dict list
         """
         data = []
@@ -647,6 +663,7 @@ class BuildService():
     def getPackagePersons(self, project, package, role):
         """
         getPackagePersons(project, package, role) -> list
+        
         Return a userid list in the package with this role
         """
         userids = []
@@ -656,6 +673,19 @@ class BuildService():
                 userids.append(person['userid'])
 
         return userids
+
+    def getPackageDevel(self, project, package):
+        """
+        getPackageDevel(project, package) -> tuple (devel_prj, devel_pkg)
+        
+        Return the devel tuple of a package if it has the node, else return None
+        """
+        devels = self.getPackageData(project, package, 'devel')
+        for devel in devels:
+            if devel.has_key('project') and devel.has_key('package'):
+                return (devel['project'], devel['package'])
+
+        return None
 
     def deletePackage(self, project, package):
         """

@@ -586,7 +586,21 @@ class BuildService():
                     data.append(node_value)
                 else:
                     data.append(node.text)
+
         return data
+
+    def getProjectPersons(self, project, role):
+        """
+        getProjectPersons(project, role) -> list
+        Return a userid list in this project with this role
+        """
+        userids = []
+        persons = self.getProjectData(project, 'person')
+        for person in persons:
+            if person.has_key('role') and person['role'] == role:
+                userids.append(person['userid'])
+
+        return userids
 
     def deleteProject(self, project):
         """
@@ -627,7 +641,21 @@ class BuildService():
                     data.append(node_value)
                 else:
                     data.append(node.text)
+
         return data
+
+    def getPackagePersons(self, project, package, role):
+        """
+        getPackagePersons(project, package, role) -> list
+        Return a userid list in the package with this role
+        """
+        userids = []
+        persons = self.getPackageData(project, package, 'person')
+        for person in persons:
+            if person.has_key('role') and person['role'] == role:
+                userids.append(person['userid'])
+
+        return userids
 
     def deletePackage(self, project, package):
         """

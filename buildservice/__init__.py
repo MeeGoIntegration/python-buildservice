@@ -102,7 +102,7 @@ class BuildService():
             apiurl = "%s://%s" % (conf.config['scheme'], host)
         return apiservers
 
-    def is_new_package(self, dst_project, dst_package):
+    def isNewPackage(self, dst_project, dst_package):
         # Check whether the dst pac is a new one
         new_pkg = False
         try:
@@ -117,7 +117,7 @@ class BuildService():
                 raise e
         return new_pkg
 
-    def gen_req_info(self, reqid, show_detail = True):
+    def genRequestInfo(self, reqid, show_detail = True):
         # helper routine to cat remote file
         def get_source_file_content(apiurl, prj, pac, path, rev):
             revision = core.show_upstream_xsrcmd5(apiurl, prj, pac, revision=rev)

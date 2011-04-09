@@ -102,6 +102,12 @@ class BuildService():
             apiurl = "%s://%s" % (conf.config['scheme'], host)
         return apiservers
 
+    # the following two alias api are added temporarily for compatible safe
+    def is_new_package(self, dst_project, dst_package):
+        return self.isNewPackage(dst_project, dst_package)
+    def gen_req_info(self, reqid, show_detail = True):
+        return self.genRequestInfo(reqid, show_detail)
+
     def isNewPackage(self, dst_project, dst_package):
         # Check whether the dst pac is a new one
         new_pkg = False

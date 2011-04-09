@@ -9,11 +9,16 @@ else
         TAG = "HEAD"
 endif
 
-
 PYTHON=python
 
 all: 
-	    python setup.py build
+	python setup.py build
+
+install: all
+	python setup.py install
+
+develop: all
+	python setup.py develop
 
 tag:
 	git tag $(VERSION)

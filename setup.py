@@ -6,7 +6,7 @@ static_files=[]
 static_files.append((os.path.join('/etc','boss'), ['conf/oscrc']))
 
 setup(name = 'buildservice',
-      version = '0.2',
+      version = '0.3',
       description = 'Module to access OBS server',
       author = 'Anas Nashif',
       author_email = 'anas.nashif@intel.com',

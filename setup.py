@@ -6,11 +6,11 @@ static_files=[]
 static_files.append((os.path.join('/etc','boss'), ['conf/oscrc']))
 
 setup(name = 'buildservice',
-             version = '0.2',
-             description = 'access build service data',
-             author = 'Anas Nashif',
-             author_email = 'anas.nashif@intel.com',
-             url = 'http://meego.gitorious.org/meego-infrastructure-tools/python-buildservice',
-             packages = ['buildservice'],
-             data_files = static_files,
+      version = '0.2',
+      description = 'Module to access OBS server',
+      author = 'Anas Nashif',
+      author_email = 'anas.nashif@intel.com',
+      url = 'http://meego.gitorious.org/meego-infrastructure-tools/python-buildservice',
+      packages = ['buildservice'],
+      data_files = static_files,
 )

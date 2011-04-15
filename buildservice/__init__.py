@@ -84,9 +84,17 @@ class BuildService():
     def __init__(self, apiurl=None, oscrc=None):
 
         if oscrc:
-            conf.get_config(override_conffile = oscrc)
+            try:
+                conf.get_config(override_conffile = oscrc)
+            except OSError, e:
+                if e.errno == 1:
+                    # permission problem, should be the chmod(0600) issue
+                    raise RuntimeError, 'Current user has no write permission for specified oscrc: %s' % oscrc
+
+                raise # else
         else:
             conf.get_config()
+
         if apiurl:
             self.apiurl = apiurl
         else:

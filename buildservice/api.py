@@ -81,8 +81,20 @@ class metafile:
 
 class BuildService():
     "Interface to Build Service API"
-    def __init__(self, apiurl=None):
-        conf.get_config()
+    def __init__(self, apiurl=None, oscrc=None):
+
+        if oscrc:
+            try:
+                conf.get_config(override_conffile = oscrc)
+            except OSError, e:
+                if e.errno == 1:
+                    # permission problem, should be the chmod(0600) issue
+                    raise RuntimeError, 'Current user has no write permission for specified oscrc: %s' % oscrc
+
+                raise # else
+        else:
+            conf.get_config()
+
         if apiurl:
             self.apiurl = apiurl
         else:
@@ -98,7 +110,13 @@ class BuildService():
             apiurl = "%s://%s" % (conf.config['scheme'], host)
         return apiservers
 
+    # the following two alias api are added temporarily for compatible safe
     def is_new_package(self, dst_project, dst_package):
+        return self.isNewPackage(dst_project, dst_package)
+    def gen_req_info(self, reqid, show_detail = True):
+        return self.genRequestInfo(reqid, show_detail)
+
+    def isNewPackage(self, dst_project, dst_package):
         # Check whether the dst pac is a new one
         new_pkg = False
         try:
@@ -113,7 +131,7 @@ class BuildService():
                 raise e
         return new_pkg
 
-    def gen_req_info(self, reqid, show_detail = True):
+    def genRequestInfo(self, reqid, show_detail = True):
         # helper routine to cat remote file
         def get_source_file_content(apiurl, prj, pac, path, rev):
             revision = core.show_upstream_xsrcmd5(apiurl, prj, pac, revision=rev)
@@ -354,6 +372,24 @@ class BuildService():
             status[target] = code
         return status
 
+    def getProjectDiff(self, src_project, dst_project):
+        packages = self.getPackageList(src_project)
+        for src_package in packages:
+            diff = core.server_diff(self.apiurl,
+                                dst_project, src_package, None,
+                                src_project, src_package, None, False)
+            print diff
+
+    def getPackageList(self, prj, deleted=None):
+        query = {}
+        if deleted:
+           query['deleted'] = 1
+
+        u = core.makeurl(self.apiurl, ['source', prj], query)
+        f = core.http_GET(u)
+        root = ElementTree.parse(f).getroot()
+        return [ node.get('name') for node in root.findall('entry') ]
+
     def getBinaryList(self, project, target, package):
         """
         getBinaryList(project, target, package) -> list
@@ -546,6 +582,68 @@ class BuildService():
         """
         return ''.join(core.show_project_meta(self.apiurl, project))
 
+    def getProjectData(self, project, tag):
+        """
+        getProjectData(project, tag) -> list
+        
+        Return a string list if node has text, else return the values dict list
+        """
+        data = []
+        tree = ElementTree.fromstring(self.getProjectMeta(project))
+        nodes = tree.findall(tag)
+        if nodes:
+            for node in nodes:
+                node_value = {}
+                for key in node.keys():
+                    node_value[key] = node.get(key)
+
+                if node_value:
+                    data.append(node_value)
+                else:
+                    data.append(node.text)
+
+        return data
+
+    def getProjectPersons(self, project, role):
+        """
+        getProjectPersons(project, role) -> list
+        
+        Return a userid list in this project with this role
+        """
+        userids = []
+        persons = self.getProjectData(project, 'person')
+        for person in persons:
+            if person.has_key('role') and person['role'] == role:
+                userids.append(person['userid'])
+
+        return userids
+
+    def getProjectDevel(self, project):
+        """
+        getProjectDevel(project) -> tuple (devel_prj, devel_pkg)
+
+        Return the devel tuple of a project if it has the node, else return None
+        """
+        devels = self.getProjectData(project, 'devel')
+        for devel in devels:
+            if devel.has_key('project') and devel.has_key('package'):
+                return (devel['project'], devel['package'])
+
+        return None
+
+    def deleteProject(self, project):
+        """
+        deleteProject(project)
+        
+        Delete the specific project
+        """
+        try:
+            core.delete_project(self.apiurl, project)
+        except Exception:
+            return False
+            
+        return True
+
     def getPackageMeta(self, project, package):
         """
         getPackageMeta(project, package) -> string
@@ -553,6 +651,68 @@ class BuildService():
         Get XML metadata for package in project
         """
         return ''.join(core.show_package_meta(self.apiurl, project, package))
+
+    def getPackageData(self, project, package, tag):
+        """
+        getPackageData(project, package, tag) -> list
+        
+        Return a string list if node has text, else return the values dict list
+        """
+        data = []
+        tree = ElementTree.fromstring(self.getPackageMeta(project, package))
+        nodes = tree.findall(tag)
+        if nodes:
+            for node in nodes:
+                node_value = {}
+                for key in node.keys():
+                    node_value[key] = node.get(key)
+
+                if node_value:
+                    data.append(node_value)
+                else:
+                    data.append(node.text)
+
+        return data
+
+    def getPackagePersons(self, project, package, role):
+        """
+        getPackagePersons(project, package, role) -> list
+        
+        Return a userid list in the package with this role
+        """
+        userids = []
+        persons = self.getPackageData(project, package, 'person')
+        for person in persons:
+            if person.has_key('role') and person['role'] == role:
+                userids.append(person['userid'])
+
+        return userids
+
+    def getPackageDevel(self, project, package):
+        """
+        getPackageDevel(project, package) -> tuple (devel_prj, devel_pkg)
+        
+        Return the devel tuple of a package if it has the node, else return None
+        """
+        devels = self.getPackageData(project, package, 'devel')
+        for devel in devels:
+            if devel.has_key('project') and devel.has_key('package'):
+                return (devel['project'], devel['package'])
+
+        return None
+
+    def deletePackage(self, project, package):
+        """
+        deletePackage(project, package)
+        
+        Delete the specific package in project
+        """
+        try:
+            core.delete_package(self.apiurl, project, package)
+        except Exception:
+            return False
+            
+        return True
 
     def projectFlags(self, project):
         """

@@ -36,6 +36,5 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %{python_sitelib}/*
-%dir %{_sysconfdir}/boss
-%config(noreplace) %{_sysconfdir}/boss/oscrc
+%config(noreplace) %{_sysconfdir}/oscrc
 

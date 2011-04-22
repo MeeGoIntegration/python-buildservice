@@ -3,7 +3,7 @@ from distutils.core import setup
 import os, sys
 
 static_files=[]
-static_files.append((os.path.join('/etc','boss'), ['conf/oscrc']))
+static_files.append((os.path.join('/etc'), ['conf/oscrc']))
 
 setup(name = 'buildservice',
       version = '0.3',

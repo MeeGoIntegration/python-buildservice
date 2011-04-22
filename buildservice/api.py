@@ -81,19 +81,16 @@ class metafile:
 
 class BuildService():
     "Interface to Build Service API"
-    def __init__(self, apiurl=None, oscrc=None):
+    def __init__(self, apiurl=None, oscrc="/etc/oscrc"):
 
-        if oscrc:
-            try:
-                conf.get_config(override_conffile = oscrc)
-            except OSError, e:
-                if e.errno == 1:
-                    # permission problem, should be the chmod(0600) issue
-                    raise RuntimeError, 'Current user has no write permission for specified oscrc: %s' % oscrc
+        try:
+            conf.get_config(override_conffile = oscrc)
+        except OSError, e:
+            if e.errno == 1:
+                # permission problem, should be the chmod(0600) issue
+                raise RuntimeError, 'Current user has no write permission for specified oscrc: %s' % oscrc
 
-                raise # else
-        else:
-            conf.get_config()
+            raise # else
 
         if apiurl:
             self.apiurl = apiurl

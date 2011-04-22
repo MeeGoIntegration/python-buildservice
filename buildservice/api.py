@@ -830,7 +830,7 @@ class BuildService():
         return archs
 
     def isPackageSucceeded(self, project, repository, pkg, arch):
-        results = core.get_package_results(self.piurl, project, pkg, 
+        results = core.get_package_results(self.apiurl, project, pkg, 
                                            repository = repository, arch=arch)
         for result in results:
             if result['code'] != "succeeded":
@@ -854,6 +854,27 @@ class BuildService():
     def getPackageReverseDepends(self, project, repository, pkg, arch):
         return self.getPackageDepends(self, project, repository, pkg, arch,
                 "pkgdep")
+
+    def getPackageFileList(self, project, pkg, revision=None):
+        if revision:
+            return core.meta_get_filelist(self.apiurl, project, pkg,
+                                          expand=True, revision=revision)
+        else:
+            return core.meta_get_filelist(self.apiurl, project, pkg,
+                                          expand=True)
+
+    def getFile(self, project, pkg, filename, revision=None):
+        data = ""
+        if revision:
+            u = core.makeurl(apiurl, ['source', project, pkg, filename], 
+                             query={"rev":revision})
+        else:
+            u = core.makeurl(apiurl, ['source', project, pkg, filename])
+        for chunks in core.streamfile(u):
+            data += chunks
+        return data
+
+
   
 
 

@@ -1,0 +1,7 @@
+[general]
+apiurl = http://api.meego.com
+
+[http://api.meego.com]
+user = <user_id>
+pass = <user_pass>
+

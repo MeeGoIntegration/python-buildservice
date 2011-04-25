@@ -228,6 +228,42 @@ class BuildService():
         # the result, in unicode string
         return reqinfo
 
+    def reqAccept(self, reqid, msg=''):
+        """ This method is called to accept a request
+            Success: return None
+            Failed:  return exception information
+        """
+        try:
+            core.change_request_state(self.apiurl, reqid, 'accepted', message=msg, supersed=None, force=True)
+        except Exception, e:
+            return str(e)
+
+        return None
+
+    def reqDecline(self, reqid, msg=''):
+        """ This method is called to decline a request
+            Success: return None
+            Failed:  return exception information
+        """
+        try:
+            core.change_request_state(self.apiurl, reqid, 'declined', message=msg, supersed=None, force=True)
+        except Exception, e:
+            print str(e)
+
+        return None
+
+    def reqRevoke(self, reqid, msg=''):
+        """ This method is called to revoke a request
+            Success: return None
+            Failed:  return exception information
+        """
+        try:
+            core.change_request_state(self.apiurl, reqid, 'revoked', message=msg, supersed=None, force=True)
+        except Exception, e:
+            return str(e)
+
+        return None
+
     def getUserData(self, user, *tags):
         """getUserData() -> str
 

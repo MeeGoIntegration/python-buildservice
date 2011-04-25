@@ -132,22 +132,6 @@ class BuildService():
         return new_pkg
 
     def genRequestInfo(self, reqid, show_detail = True):
-        # helper routine to cat remote file
-        def get_source_file_content(apiurl, prj, pac, path, rev):
-            revision = core.show_upstream_xsrcmd5(apiurl, prj, pac, revision=rev)
-            if revision:
-                query = { 'rev': revision }
-            else:
-                query = None
-
-            u = core.makeurl(apiurl, ['source', prj, pac, core.pathname2url(path)], query=query)
-
-            content = ''
-            for buf in core.streamfile(u, core.http_GET, core.BUFSIZE):
-                content += buf
-
-            # return unicode str
-            return content.decode('utf8')
 
         req = core.get_request(self.apiurl, reqid)
         try:
@@ -178,7 +162,7 @@ class BuildService():
                 raise e
 
         if new_pkg:
-            src_fl = core.meta_get_filelist(self.apiurl, src_project, src_package, expand=True, revision=src_rev)
+            src_fl = self.getSrcFileList(src_project, src_package, src_rev)
 
             spec_file = None
             yaml_file = None
@@ -197,13 +181,13 @@ class BuildService():
             if yaml_file:
                 reqinfo += '\n\nThe content of the YAML file, %s:\n' % (yaml_file)
                 reqinfo += '===================================================================\n'
-                reqinfo += get_source_file_content(self.apiurl, src_project, src_package, yaml_file, src_rev)
+                reqinfo += self.getSrcFileContent(src_project, src_package, yaml_file, src_rev)
                 reqinfo += '\n===================================================================\n'
 
             if spec_file:
                 reqinfo += '\n\nThe content of the spec file, %s:\n' % (spec_file)
                 reqinfo += '===================================================================\n'
-                reqinfo += get_source_file_content(self.apiurl, src_project, src_package, spec_file, src_rev)
+                reqinfo += self.getSrcFileContent(src_project, src_package, spec_file, src_rev)
                 reqinfo += '\n===================================================================\n'
             else:
                 reqinfo += '\n\nspec file NOT FOUND!\n'
@@ -231,8 +215,9 @@ class BuildService():
     def reqAccept(self, reqid, msg=''):
         """ This method is called to accept a request
             Success: return None
-            Failed:  return exception information
+            Failed:  return string of error message
         """
+
         try:
             core.change_request_state(self.apiurl, reqid, 'accepted', message=msg, supersed=None, force=True)
         except Exception, e:
@@ -243,20 +228,22 @@ class BuildService():
     def reqDecline(self, reqid, msg=''):
         """ This method is called to decline a request
             Success: return None
-            Failed:  return exception information
+            Failed:  return string of error message
         """
+
         try:
             core.change_request_state(self.apiurl, reqid, 'declined', message=msg, supersed=None, force=True)
         except Exception, e:
-            print str(e)
+            return str(e)
 
         return None
 
     def reqRevoke(self, reqid, msg=''):
         """ This method is called to revoke a request
             Success: return None
-            Failed:  return exception information
+            Failed:  return string of error message
         """
+
         try:
             core.change_request_state(self.apiurl, reqid, 'revoked', message=msg, supersed=None, force=True)
         except Exception, e:
@@ -264,19 +251,19 @@ class BuildService():
 
         return None
 
-    def getSrcFileList(self, project, package):
+    def getSrcFileList(self, project, package, revision=None):
         """ get source file list of prj/pac
         """
-        src_fl = core.meta_get_filelist(self.apiurl, project, package, expand=True)
-        
-        return src_fl
 
-    def getSrcFileContent(self, project, package, path):
+        return core.meta_get_filelist(self.apiurl, project, package, expand=True, revision)
+
+    def getSrcFileContent(self, project, package, path, revision=None):
         """ Cat remote file
         """
-        revision = core.show_upstream_xsrcmd5(self.apiurl, project, package)
-        if revision:
-            query = { 'rev': revision }
+
+        rev = core.show_upstream_xsrcmd5(self.apiurl, project, package, revision=revision)
+        if rev:
+            query = { 'rev': rev }
         else:
             query = None
 

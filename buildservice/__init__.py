@@ -264,6 +264,31 @@ class BuildService():
 
         return None
 
+    def getSrcFileList(self, project, package):
+        """ get source file list of prj/pac
+        """
+        src_fl = core.meta_get_filelist(self.apiurl, project, package, expand=True)
+        
+        return src_fl
+
+    def getSrcFileContent(self, project, package, path):
+        """ Cat remote file
+        """
+        revision = core.show_upstream_xsrcmd5(self.apiurl, project, package)
+        if revision:
+            query = { 'rev': revision }
+        else:
+            query = None
+
+        u = core.makeurl(self.apiurl, ['source', project, package, core.pathname2url(path)], query=query)
+
+        content = ''
+        for buf in core.streamfile(u, core.http_GET, core.BUFSIZE):
+            content += buf
+
+        # return unicode str
+        return content.decode('utf8')
+
     def getUserData(self, user, *tags):
         """getUserData() -> str
 

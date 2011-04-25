@@ -255,7 +255,7 @@ class BuildService():
         """ get source file list of prj/pac
         """
 
-        return core.meta_get_filelist(self.apiurl, project, package, expand=True, revision)
+        return core.meta_get_filelist(self.apiurl, project, package, expand=True, revision=revision)
 
     def getSrcFileContent(self, project, package, path, revision=None):
         """ Cat remote file

@@ -866,13 +866,20 @@ class BuildService():
     def getFile(self, project, pkg, filename, revision=None):
         data = ""
         if revision:
-            u = core.makeurl(apiurl, ['source', project, pkg, filename], 
+            u = core.makeurl(self.apiurl, ['source', project, pkg, filename],
                              query={"rev":revision})
         else:
-            u = core.makeurl(apiurl, ['source', project, pkg, filename])
+            u = core.makeurl(self.apiurl, ['source', project, pkg, filename])
         for chunks in core.streamfile(u):
             data += chunks
         return data
+
+    def setRequestState(self, rid, new_state, msg):
+         ret = change_request_state(self.apiurl, rid, new_state, msg)
+         if ret == "ok":
+             return True
+         else:
+             return False
 
 
   

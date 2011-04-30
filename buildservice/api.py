@@ -97,6 +97,9 @@ class BuildService():
         else:
             self.apiurl = conf.config['apiurl']
 
+
+        self.copyPackage = core.copy_pac
+
     def getAPIServerList(self):
         """getAPIServerList() -> list
 
@@ -875,12 +878,14 @@ class BuildService():
         return data
 
     def setRequestState(self, rid, new_state, msg):
-         ret = change_request_state(self.apiurl, rid, new_state, msg)
+         ret = core.change_request_state(self.apiurl, rid, new_state, msg)
          if ret == "ok":
              return True
          else:
              return False
 
+    def wipeBinaries(self, project):
+         core.wipebinaries(self.apiurl, project)
 
   
 

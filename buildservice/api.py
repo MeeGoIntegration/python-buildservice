@@ -81,10 +81,14 @@ class metafile:
 
 class BuildService():
     "Interface to Build Service API"
-    def __init__(self, apiurl=None, oscrc="/etc/oscrc"):
+    def __init__(self, apiurl=None, oscrc=None):
 
         try:
-            conf.get_config(override_conffile = oscrc)
+            if oscrc:
+                conf.get_config(override_conffile = oscrc)
+            else:
+                conf.get_config()
+
         except OSError, e:
             if e.errno == 1:
                 # permission problem, should be the chmod(0600) issue

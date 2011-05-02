@@ -93,7 +93,7 @@ class BuildService():
             raise # else
 
         if apiurl:
-            self.apiurl = apiurl
+            self.apiurl = conf.config['apiurl_aliases'].get(apiurl, apiurl)
         else:
             self.apiurl = conf.config['apiurl']
 
@@ -885,9 +885,8 @@ class BuildService():
              return False
 
     def wipeBinaries(self, project):
-         core.wipebinaries(self.apiurl, project)
+        core.wipebinaries(self.apiurl, project)
 
-  
 
 
 class ProjectFlags(object):

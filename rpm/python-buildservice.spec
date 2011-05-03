@@ -1,6 +1,6 @@
 Name:       python-buildservice
 Summary:    Python module to access OBS server
-Version:    0.3.0
+Version:    0.3.1
 Release:    1
 Group:      Development/Languages
 License:    GPLv2+

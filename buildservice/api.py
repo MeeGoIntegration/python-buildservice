@@ -101,6 +101,8 @@ class BuildService():
         else:
             self.apiurl = conf.config['apiurl']
 
+        if not self.apiurl:
+            raise RuntimeError, 'No apiurl '%s' found in %s' % (apiurl, oscrc)
 
         self.copyPackage = core.copy_pac
 

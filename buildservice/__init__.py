@@ -276,6 +276,26 @@ class BuildService():
         # return unicode str
         return content.decode('utf8')
 
+    def getSrcFileChecksum(self, project, package, path, revision=None):
+        """ getSrcFileChecksum(self, project, package, path, revision=None) -> string
+            returns source md5 of a source file
+        """
+
+        query = {}
+        query['expand'] = 1
+        if revision:
+            query['rev'] = revision
+
+        u = core.makeurl(self.apiurl, ['source', project, package], query=query)
+        f = core.http_GET(u)
+        root = ElementTree.parse(f).getroot()
+
+        for node in root.findall('entry'):
+            if node.get('name') == path:
+                 return node.get('md5')
+
+        return None
+
     def getUserData(self, user, *tags):
         """getUserData() -> str
 

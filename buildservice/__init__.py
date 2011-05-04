@@ -296,6 +296,25 @@ class BuildService():
 
         return None
 
+    def getLinkinfo(self, project, package, revision=None):
+        """ getLinkinfo(self, project, package, revision=None) -> (linked_prj, linked_pkg)
+            returns source md5 of a source file
+        """
+
+        query = {}
+        query['expand'] = 1
+        if revision:
+            query['rev'] = revision
+
+        u = core.makeurl(self.apiurl, ['source', project, package], query=query)
+        f = core.http_GET(u)
+        root = ElementTree.parse(f).getroot()
+
+        for node in root.findall('linkinfo'):
+            return (node.get('project'), node.get('package'))
+
+        return None
+
     def getUserData(self, user, *tags):
         """getUserData() -> str
 

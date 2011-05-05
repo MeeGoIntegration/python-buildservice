@@ -882,7 +882,7 @@ class BuildService():
         return data
 
     def setRequestState(self, rid, new_state, msg):
-         ret = core.change_request_state(self.apiurl, rid, new_state, msg)
+         ret = core.change_request_state(self.apiurl, rid, new_state, message=msg)
          if ret == "ok":
              return True
          else:

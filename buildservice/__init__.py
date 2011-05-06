@@ -219,7 +219,7 @@ class BuildService():
         """
 
         try:
-            core.change_request_state(self.apiurl, reqid, 'accepted', message=msg, supersed=None, force=True)
+            core.change_request_state(self.apiurl, reqid, 'accepted', message=msg, supersed=None)
         except Exception, e:
             return str(e)
 
@@ -232,7 +232,7 @@ class BuildService():
         """
 
         try:
-            core.change_request_state(self.apiurl, reqid, 'declined', message=msg, supersed=None, force=True)
+            core.change_request_state(self.apiurl, reqid, 'declined', message=msg, supersed=None)
         except Exception, e:
             return str(e)
 
@@ -245,7 +245,25 @@ class BuildService():
         """
 
         try:
-            core.change_request_state(self.apiurl, reqid, 'revoked', message=msg, supersed=None, force=True)
+            core.change_request_state(self.apiurl, reqid, 'revoked', message=msg, supersed=None)
+        except Exception, e:
+            return str(e)
+
+        return None
+
+    def reqReview(self, reqid, user='', group='', msg=''):
+        """ This method is called to add review msg to a request
+        """
+        try:
+            query = { 'cmd': 'addreview' }
+            if user:
+                query['by_user'] = user
+            if group:
+                query['by_group'] = group
+            u = core.makeurl(self.apiurl, ['request', reqid], query=query)
+            f = core.http_POST(u, data=msg)
+            root = ElementTree.parse(f).getroot()
+            root.get('code')
         except Exception, e:
             return str(e)
 

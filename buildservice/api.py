@@ -862,21 +862,25 @@ class BuildService():
         return self.getPackageDepends(self, project, repository, pkg, arch,
                 "pkgdep")
 
+    def getPackageRev(self, project, pkg):
+        xml = core.show_files_meta(self.apiurl, project, pkg, expand=True)
+        tree =  ElementTree.fromstring(''.join(xml))
+        return tree.get("rev")
+
     def getPackageFileList(self, project, pkg, revision=None):
-        if revision:
-            return core.meta_get_filelist(self.apiurl, project, pkg,
+        if not revision:
+            revision = self.getPackageRev(project, pkg)
+
+        return core.meta_get_filelist(self.apiurl, project, pkg,
                                           expand=True, revision=revision)
-        else:
-            return core.meta_get_filelist(self.apiurl, project, pkg,
-                                          expand=True)
 
     def getFile(self, project, pkg, filename, revision=None):
         data = ""
-        if revision:
-            u = core.makeurl(self.apiurl, ['source', project, pkg, filename],
+        if not revision:
+            revision = self.getPackageRev(project, pkg)
+
+        u = core.makeurl(self.apiurl, ['source', project, pkg, filename],
                              query={"rev":revision})
-        else:
-            u = core.makeurl(self.apiurl, ['source', project, pkg, filename])
         for chunks in core.streamfile(u):
             data += chunks
         return data

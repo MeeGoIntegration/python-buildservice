@@ -253,6 +253,8 @@ class BuildService():
 
     def reqReview(self, reqid, user='', group='', msg=''):
         """ This method is called to add review msg to a request
+            Success: return None
+            Failed:  return string of error message
         """
         try:
             query = { 'cmd': 'addreview' }
@@ -316,7 +318,7 @@ class BuildService():
 
     def getLinkinfo(self, project, package, revision=None):
         """ getLinkinfo(self, project, package, revision=None) -> (linked_prj, linked_pkg)
-            returns source md5 of a source file
+            returns link info of a prj/pkg
         """
 
         query = {}
@@ -733,6 +735,19 @@ class BuildService():
         for devel in devels:
             if devel.has_key('project') and devel.has_key('package'):
                 return (devel['project'], devel['package'])
+
+        return None
+
+    def getProjectLink(self, project):
+        """
+        getProjectLink(project) -> string
+
+        Return the linked project of a project if it has the node, else return None
+        """
+        links = self.getProjectData(project, 'link')
+        for link in links:
+            if link.has_key('project'):
+                return link['project']
 
         return None
 

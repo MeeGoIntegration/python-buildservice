@@ -297,7 +297,7 @@ class BuildService():
         return content.decode('utf8')
 
     def getSrcFileChecksum(self, project, package, path, revision=None):
-        """ getSrcFileChecksum(self, project, package, path, revision=None) -> string
+        """ getSrcFileChecksum(project, package, path, revision=None) -> string
             returns source md5 of a source file
         """
 
@@ -312,12 +312,28 @@ class BuildService():
 
         for node in root.findall('entry'):
             if node.get('name') == path:
-                 return node.get('md5')
+                return node.get('md5')
 
         return None
 
+    def getPackageChecksum(self, project, package, revision=None):
+        """ getPackageChecksum(project, package, revision=None) -> string
+            returns srcmd5 of a package
+        """
+
+        query = {}
+        query['expand'] = 1
+        if revision:
+            query['rev'] = revision
+
+        u = core.makeurl(self.apiurl, ['source', project, package], query=query)
+        f = core.http_GET(u)
+        root = ElementTree.parse(f).getroot()
+
+        return root.get('srcmd5')
+
     def getLinkinfo(self, project, package, revision=None):
-        """ getLinkinfo(self, project, package, revision=None) -> (linked_prj, linked_pkg)
+        """ getLinkinfo(project, package, revision=None) -> (linked_prj, linked_pkg, linked_srcmd5)
             returns link info of a prj/pkg
         """
 
@@ -331,7 +347,7 @@ class BuildService():
         root = ElementTree.parse(f).getroot()
 
         for node in root.findall('linkinfo'):
-            return (node.get('project'), node.get('package'))
+            return (node.get('project'), node.get('package'), node.get('srcmd5'))
 
         return None
 

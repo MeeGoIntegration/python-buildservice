@@ -5,6 +5,10 @@ import os, sys
 static_files=[]
 static_files.append((os.path.join('/etc','boss'), ['conf/oscrc']))
 
+# For debian based systems, '--install-layout=deb' is needed after 2.6
+if sys.version_info[:2] <= (2, 5) and '--install-layout=deb' in sys.argv:
+    del sys.argv[sys.argv.index('--install-layout=deb')]
+
 setup(name = 'buildservice',
       version = '0.4',
       description = 'Module to access OBS server',

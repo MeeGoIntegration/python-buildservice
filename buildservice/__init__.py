@@ -144,9 +144,13 @@ class BuildService():
 
         src_project = req.actions[0].src_project
         src_package = req.actions[0].src_package
-        dst_project = req.actions[0].dst_project
-        dst_package = req.actions[0].dst_package
         src_rev = req.actions[0].src_rev
+        try:
+            dst_project = req.actions[0].dst_project
+            dst_package = req.actions[0].dst_package
+        except AttributeError:
+            dst_project = req.actions[0].tgt_project
+            dst_package = req.actions[0].tgt_package
 
         # Check whether the dst pac is a new one
         new_pkg = False

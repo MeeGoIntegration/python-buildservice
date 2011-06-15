@@ -133,85 +133,118 @@ class BuildService():
 
     def genRequestInfo(self, reqid, show_detail = True):
 
+        def gen_request_diff():
+            """ Recommanded getter: request_diff can get req diff info even if req is accepted/declined
+            """
+            reqdiff = ''
+
+            try:
+                diff = core.request_diff(self.apiurl, reqid)
+
+                try:
+                    reqdiff += diff.decode('utf-8')
+                except UnicodeDecodeError:
+                    try:
+                        reqdiff += diff.decode('iso-8859-1')
+                    except UnicodeDecodeError:
+                        pass
+
+            except (AttributeError, urllib2.HTTPError), e:
+                return None
+
+            return reqdiff
+
+        def gen_server_diff(req):
+            """ Reserved getter: get req diff, if and only if the recommanded getter failed 
+            """
+            reqdiff = ''
+
+            src_project = req.actions[0].src_project
+            src_package = req.actions[0].src_package
+            src_rev = req.actions[0].src_rev
+            try:
+                dst_project = req.actions[0].dst_project
+                dst_package = req.actions[0].dst_package
+            except AttributeError:
+                dst_project = req.actions[0].tgt_project
+                dst_package = req.actions[0].tgt_package
+
+            # Check whether the dst pac is a new one
+            new_pkg = False
+            try:
+                core.meta_exists(metatype = 'pkg',
+                            path_args = (core.quote_plus(dst_project), core.quote_plus(dst_package)),
+                            create_new = False,
+                            apiurl = self.apiurl)
+            except urllib2.HTTPError, e:
+                if e.code == 404:
+                    new_pkg = True
+                else:
+                    raise e
+
+            if new_pkg:
+                src_fl = self.getSrcFileList(src_project, src_package, src_rev)
+
+                spec_file = None
+                yaml_file = None
+                for f in src_fl:
+                    if f.endswith(".spec"):
+                        spec_file = f
+                    elif f.endswith(".yaml"):
+                       yaml_file = f
+
+                reqdiff += 'This is a NEW package in %s project.\n' % dst_project
+
+                reqdiff += 'The files in the new package:\n'
+                reqdiff += '%s/\n' % src_package
+                reqdiff += '  |__  ' + '\n  |__  '.join(src_fl)
+
+                if yaml_file:
+                    reqdiff += '\n\nThe content of the YAML file, %s:\n' % (yaml_file)
+                    reqdiff += '===================================================================\n'
+                    reqdiff += self.getSrcFileContent(src_project, src_package, yaml_file, src_rev)
+                    reqdiff += '\n===================================================================\n'
+
+                if spec_file:
+                    reqdiff += '\n\nThe content of the spec file, %s:\n' % (spec_file)
+                    reqdiff += '===================================================================\n'
+                    reqdiff += self.getSrcFileContent(src_project, src_package, spec_file, src_rev)
+                    reqdiff += '\n===================================================================\n'
+                else:
+                    reqdiff += '\n\nspec file NOT FOUND!\n'
+
+            else:
+                try:
+                    diff = core.server_diff(self.apiurl,
+                                        dst_project, dst_package, None,
+                                        src_project, src_package, src_rev, False)
+
+                    try:
+                        reqdiff += diff.decode('utf-8')
+                    except UnicodeDecodeError:
+                        try:
+                            reqdiff += diff.decode('iso-8859-1')
+                        except UnicodeDecodeError:
+                            pass
+
+                except urllib2.HTTPError, e:
+                    e.osc_msg = 'Diff not possible'
+                    return ''
+
+            return reqdiff
+
         req = core.get_request(self.apiurl, reqid)
         try:
             reqinfo = unicode(req)
         except UnicodeEncodeError:
             reqinfo = u''
 
-        if not show_detail:
-            return reqinfo
+        if show_detail:
+            diff = gen_request_diff()
+            if diff is None:
+                diff = gen_server_diff(req)
 
-        src_project = req.actions[0].src_project
-        src_package = req.actions[0].src_package
-        src_rev = req.actions[0].src_rev
-        try:
-            dst_project = req.actions[0].dst_project
-            dst_package = req.actions[0].dst_package
-        except AttributeError:
-            dst_project = req.actions[0].tgt_project
-            dst_package = req.actions[0].tgt_package
-
-        # Check whether the dst pac is a new one
-        new_pkg = False
-        try:
-            core.meta_exists(metatype = 'pkg',
-                        path_args = (core.quote_plus(dst_project), core.quote_plus(dst_package)),
-                        create_new = False,
-                        apiurl = self.apiurl)
-        except urllib2.HTTPError, e:
-            if e.code == 404:
-                new_pkg = True
-            else:
-                raise e
-
-        if new_pkg:
-            src_fl = self.getSrcFileList(src_project, src_package, src_rev)
-
-            spec_file = None
-            yaml_file = None
-            for f in src_fl:
-                if f.endswith(".spec"):
-                    spec_file = f
-                elif f.endswith(".yaml"):
-                    yaml_file = f
-
-            reqinfo += 'This is a NEW package in %s project.\n' % dst_project
-
-            reqinfo += 'The files in the new package:\n'
-            reqinfo += '%s/\n' % src_package
-            reqinfo += '  |__  ' + '\n  |__  '.join(src_fl)
-
-            if yaml_file:
-                reqinfo += '\n\nThe content of the YAML file, %s:\n' % (yaml_file)
-                reqinfo += '===================================================================\n'
-                reqinfo += self.getSrcFileContent(src_project, src_package, yaml_file, src_rev)
-                reqinfo += '\n===================================================================\n'
-
-            if spec_file:
-                reqinfo += '\n\nThe content of the spec file, %s:\n' % (spec_file)
-                reqinfo += '===================================================================\n'
-                reqinfo += self.getSrcFileContent(src_project, src_package, spec_file, src_rev)
-                reqinfo += '\n===================================================================\n'
-            else:
-                reqinfo += '\n\nspec file NOT FOUND!\n'
-
-        else:
-            try:
-                diff = core.server_diff(self.apiurl,
-                                    dst_project, dst_package, None,
-                                    src_project, src_package, src_rev, False)
-
-                try:
-                    reqinfo += diff.decode('utf-8')
-                except UnicodeDecodeError:
-                    try:
-                        reqinfo += diff.decode('iso-8859-1')
-                    except UnicodeDecodeError:
-                        pass
-
-            except urllib2.HTTPError, e:
-                e.osc_msg = 'Diff not possible'
+            reqinfo += diff
 
         # the result, in unicode string
         return reqinfo

@@ -21,15 +21,15 @@ develop: all
 	python setup.py develop
 
 tag:
-	git tag $(VERSION)
+	git tag $(TAGVER)
 
 dist-bz2:
-	git archive --format=tar --prefix=$(NAME)-$(VERSION)/ $(TAG) | \
-		bzip2  > $(NAME)-$(VERSION).tar.bz2
+	git archive --format=tar --prefix=$(NAME)-$(TAGVER)/ $(TAG) | \
+		bzip2  > $(NAME)-$(TAGVER).tar.bz2
 
 dist-gz:
-	git archive --format=tar --prefix=$(NAME)-$(VERSION)/ $(TAG) | \
-		gzip  > $(NAME)-$(VERSION).tar.gz
+	git archive --format=tar --prefix=$(NAME)-$(TAGVER)/ $(TAG) | \
+		gzip  > $(NAME)-$(TAGVER).tar.gz
 
 dist: dist-bz2
 

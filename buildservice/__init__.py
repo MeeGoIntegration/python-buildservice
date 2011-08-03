@@ -235,6 +235,7 @@ class BuildService():
 
         req = core.get_request(self.apiurl, reqid)
         try:
+            req.reviews = []
             reqinfo = unicode(req)
         except UnicodeEncodeError:
             reqinfo = u''

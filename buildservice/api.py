@@ -838,7 +838,8 @@ class BuildService():
 
     def isPackageSucceeded(self, project, repository, pkg, arch):
         results = core.get_package_results(self.apiurl, project, pkg, 
-                                           repository = repository, arch=arch)
+                                           repository = [repository],
+                                           arch=[arch])
         for result in results:
             if result['code'] != "succeeded":
                 return False
@@ -895,6 +896,9 @@ class BuildService():
     def wipeBinaries(self, project):
         core.wipebinaries(self.apiurl, project)
 
+    def getPackageResults(self, project, repository, pkg, arch)
+        return core.get_package_results(apiurl, prj, pkg, repository=[repo],
+                                        arch=[arch])[0]
 
 
 class ProjectFlags(object):

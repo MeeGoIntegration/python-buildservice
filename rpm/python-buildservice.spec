@@ -9,7 +9,7 @@ URL:        http://meego.gitorious.org/meego-infrastructure-tools/python-buildse
 Source0:    %{name}_%{version}.orig.tar.gz
 Requires:   python >= 2.5
 Requires:   osc
-BuildRequires:  python, python-sphinx
+BuildRequires:  python, python-sphinx, osc
 BuildRoot:  %{_tmppath}/%{name}-%{version}-build
 
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}

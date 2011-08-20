@@ -2,7 +2,7 @@ Source: python-buildservice
 Section: python
 Priority: optional
 Maintainer: Islam Amer <islam.amer@nokia.com>
-Build-Depends: debhelper (>= 7.0.50~), python-support (>= 0.5.0), python-setuptools, python-sphinx
+Build-Depends: debhelper (>= 7.0.50~), python-support (>= 0.5.0), python-setuptools, python-sphinx, osc
 Standards-Version: 3.9.2
 XS-Python-Version: >= 2.6
 

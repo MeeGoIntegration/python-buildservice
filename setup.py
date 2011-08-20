@@ -1,6 +1,7 @@
 #!/usr/bin/python2
 from distutils.core import setup
 import os, sys
+from setuptools import find_packages
 
 setup(name = 'buildservice',
       version = '0.3',

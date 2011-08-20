@@ -896,7 +896,7 @@ class BuildService():
     def wipeBinaries(self, project):
         core.wipebinaries(self.apiurl, project)
 
-    def getPackageResults(self, project, repository, pkg, arch)
+    def getPackageResults(self, project, repository, pkg, arch):
         return core.get_package_results(apiurl, prj, pkg, repository=[repo],
                                         arch=[arch])[0]
 

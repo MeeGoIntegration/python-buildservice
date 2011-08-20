@@ -13,3 +13,9 @@ XB-Python-Version: ${python:Versions}
 Description: Clean wrapper around OpenSUSE buildservice API
  Python classes that cleanly wrap the OBS API and reuses functions from osc
 
+Package: python-buildservice-docs
+Architecture: all
+Depends: ${misc:Depends}
+Description: Clean wrapper around OpenSUSE buildservice API - docs
+ Python classes that cleanly wrap the OBS API and reuses functions from osc - docs
+

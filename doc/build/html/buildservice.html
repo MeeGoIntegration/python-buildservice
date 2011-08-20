@@ -51,13 +51,27 @@
 <span id="build-service-api"></span><h1>Build Service API<a class="headerlink" href="#module-api" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="api.BuildService">
-<em class="property">class </em><tt class="descclassname">api.</tt><tt class="descname">BuildService</tt><big>(</big><em>apiurl=None</em><big>)</big><a class="reference internal" href="_modules/api.html#BuildService"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.BuildService" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">api.</tt><tt class="descname">BuildService</tt><big>(</big><em>apiurl=None</em>, <em>oscrc=None</em><big>)</big><a class="reference internal" href="_modules/api.html#BuildService"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.BuildService" title="Permalink to this definition">¶</a></dt>
 <dd><p>Interface to Build Service API</p>
 <dl class="method">
 <dt id="api.BuildService.abortBuild">
 <tt class="descname">abortBuild</tt><big>(</big><em>project</em>, <em>package=None</em>, <em>target=None</em><big>)</big><a class="reference internal" href="_modules/api.html#BuildService.abortBuild"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.BuildService.abortBuild" title="Permalink to this definition">¶</a></dt>
 <dd><p>abort(project, package=None, target=None)</p>
 <p>Abort build of a package or all packages in a project</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.BuildService.deletePackage">
+<tt class="descname">deletePackage</tt><big>(</big><em>project</em>, <em>package</em><big>)</big><a class="reference internal" href="_modules/api.html#BuildService.deletePackage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.BuildService.deletePackage" title="Permalink to this definition">¶</a></dt>
+<dd><p>deletePackage(project, package)</p>
+<p>Delete the specific package in project</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.BuildService.deleteProject">
+<tt class="descname">deleteProject</tt><big>(</big><em>project</em><big>)</big><a class="reference internal" href="_modules/api.html#BuildService.deleteProject"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.BuildService.deleteProject" title="Permalink to this definition">¶</a></dt>
+<dd><p>deleteProject(project)</p>
+<p>Delete the specific project</p>
 </dd></dl>
 
 <dl class="method">
@@ -115,10 +129,31 @@ comment)</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="api.BuildService.getPackageData">
+<tt class="descname">getPackageData</tt><big>(</big><em>project</em>, <em>package</em>, <em>tag</em><big>)</big><a class="reference internal" href="_modules/api.html#BuildService.getPackageData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.BuildService.getPackageData" title="Permalink to this definition">¶</a></dt>
+<dd><p>getPackageData(project, package, tag) -&gt; list</p>
+<p>Return a string list if node has text, else return the values dict list</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.BuildService.getPackageDevel">
+<tt class="descname">getPackageDevel</tt><big>(</big><em>project</em>, <em>package</em><big>)</big><a class="reference internal" href="_modules/api.html#BuildService.getPackageDevel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.BuildService.getPackageDevel" title="Permalink to this definition">¶</a></dt>
+<dd><p>getPackageDevel(project, package) -&gt; tuple (devel_prj, devel_pkg)</p>
+<p>Return the devel tuple of a package if it has the node, else return None</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="api.BuildService.getPackageMeta">
 <tt class="descname">getPackageMeta</tt><big>(</big><em>project</em>, <em>package</em><big>)</big><a class="reference internal" href="_modules/api.html#BuildService.getPackageMeta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.BuildService.getPackageMeta" title="Permalink to this definition">¶</a></dt>
 <dd><p>getPackageMeta(project, package) -&gt; string</p>
 <p>Get XML metadata for package in project</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.BuildService.getPackagePersons">
+<tt class="descname">getPackagePersons</tt><big>(</big><em>project</em>, <em>package</em>, <em>role</em><big>)</big><a class="reference internal" href="_modules/api.html#BuildService.getPackagePersons"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.BuildService.getPackagePersons" title="Permalink to this definition">¶</a></dt>
+<dd><p>getPackagePersons(project, package, role) -&gt; list</p>
+<p>Return a userid list in the package with this role</p>
 </dd></dl>
 
 <dl class="method">
@@ -127,6 +162,20 @@ comment)</p>
 <dd><p>getPackageStatus(project, package) -&gt; dict</p>
 <p>Returns the status of a package as a dict with targets as the keys and status codes as the
 values</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.BuildService.getProjectData">
+<tt class="descname">getProjectData</tt><big>(</big><em>project</em>, <em>tag</em><big>)</big><a class="reference internal" href="_modules/api.html#BuildService.getProjectData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.BuildService.getProjectData" title="Permalink to this definition">¶</a></dt>
+<dd><p>getProjectData(project, tag) -&gt; list</p>
+<p>Return a string list if node has text, else return the values dict list</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.BuildService.getProjectDevel">
+<tt class="descname">getProjectDevel</tt><big>(</big><em>project</em><big>)</big><a class="reference internal" href="_modules/api.html#BuildService.getProjectDevel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.BuildService.getProjectDevel" title="Permalink to this definition">¶</a></dt>
+<dd><p>getProjectDevel(project) -&gt; tuple (devel_prj, devel_pkg)</p>
+<p>Return the devel tuple of a project if it has the node, else return None</p>
 </dd></dl>
 
 <dl class="method">
@@ -148,6 +197,13 @@ values</p>
 <tt class="descname">getProjectMeta</tt><big>(</big><em>project</em><big>)</big><a class="reference internal" href="_modules/api.html#BuildService.getProjectMeta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.BuildService.getProjectMeta" title="Permalink to this definition">¶</a></dt>
 <dd><p>getProjectMeta(project) -&gt; string</p>
 <p>Get XML metadata for project</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="api.BuildService.getProjectPersons">
+<tt class="descname">getProjectPersons</tt><big>(</big><em>project</em>, <em>role</em><big>)</big><a class="reference internal" href="_modules/api.html#BuildService.getProjectPersons"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.BuildService.getProjectPersons" title="Permalink to this definition">¶</a></dt>
+<dd><p>getProjectPersons(project, role) -&gt; list</p>
+<p>Return a userid list in this project with this role</p>
 </dd></dl>
 
 <dl class="method">

@@ -129,12 +129,28 @@
 </div>
 <div class="viewcode-block" id="BuildService"><a class="viewcode-back" href="../buildservice.html#api.BuildService">[docs]</a><span class="k">class</span> <span class="nc">BuildService</span><span class="p">():</span>
     <span class="s">&quot;Interface to Build Service API&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">apiurl</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="n">conf</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">apiurl</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">oscrc</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">oscrc</span><span class="p">:</span>
+                <span class="n">conf</span><span class="o">.</span><span class="n">get_config</span><span class="p">(</span><span class="n">override_conffile</span> <span class="o">=</span> <span class="n">oscrc</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">conf</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c"># permission problem, should be the chmod(0600) issue</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">,</span> <span class="s">&#39;Current user has no write permission for specified oscrc: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">oscrc</span>
+
+            <span class="k">raise</span> <span class="c"># else</span>
+
         <span class="k">if</span> <span class="n">apiurl</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span> <span class="o">=</span> <span class="n">apiurl</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span> <span class="o">=</span> <span class="n">conf</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;apiurl_aliases&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">apiurl</span><span class="p">,</span> <span class="n">apiurl</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span> <span class="o">=</span> <span class="n">conf</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;apiurl&#39;</span><span class="p">]</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">copyPackage</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">copy_pac</span>
 
 <div class="viewcode-block" id="BuildService.getAPIServerList"><a class="viewcode-back" href="../buildservice.html#api.BuildService.getAPIServerList">[docs]</a>    <span class="k">def</span> <span class="nf">getAPIServerList</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;getAPIServerList() -&gt; list</span>
@@ -145,8 +161,14 @@
         <span class="k">for</span> <span class="n">host</span> <span class="ow">in</span> <span class="n">conf</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;api_host_options&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="n">apiurl</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">://</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">conf</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;scheme&#39;</span><span class="p">],</span> <span class="n">host</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">apiservers</span>
-</div>
+
+    <span class="c"># the following two alias api are added temporarily for compatible safe</span></div>
     <span class="k">def</span> <span class="nf">is_new_package</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_project</span><span class="p">,</span> <span class="n">dst_package</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">isNewPackage</span><span class="p">(</span><span class="n">dst_project</span><span class="p">,</span> <span class="n">dst_package</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">gen_req_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reqid</span><span class="p">,</span> <span class="n">show_detail</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">genRequestInfo</span><span class="p">(</span><span class="n">reqid</span><span class="p">,</span> <span class="n">show_detail</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">isNewPackage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_project</span><span class="p">,</span> <span class="n">dst_package</span><span class="p">):</span>
         <span class="c"># Check whether the dst pac is a new one</span>
         <span class="n">new_pkg</span> <span class="o">=</span> <span class="bp">False</span>
         <span class="k">try</span><span class="p">:</span>
@@ -161,7 +183,7 @@
                 <span class="k">raise</span> <span class="n">e</span>
         <span class="k">return</span> <span class="n">new_pkg</span>
 
-    <span class="k">def</span> <span class="nf">gen_req_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reqid</span><span class="p">,</span> <span class="n">show_detail</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">genRequestInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reqid</span><span class="p">,</span> <span class="n">show_detail</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
         <span class="c"># helper routine to cat remote file</span>
         <span class="k">def</span> <span class="nf">get_source_file_content</span><span class="p">(</span><span class="n">apiurl</span><span class="p">,</span> <span class="n">prj</span><span class="p">,</span> <span class="n">pac</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">rev</span><span class="p">):</span>
             <span class="n">revision</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">show_upstream_xsrcmd5</span><span class="p">(</span><span class="n">apiurl</span><span class="p">,</span> <span class="n">prj</span><span class="p">,</span> <span class="n">pac</span><span class="p">,</span> <span class="n">revision</span><span class="o">=</span><span class="n">rev</span><span class="p">)</span>
@@ -402,6 +424,24 @@
             <span class="n">status</span><span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="o">=</span> <span class="n">code</span>
         <span class="k">return</span> <span class="n">status</span>
 </div>
+    <span class="k">def</span> <span class="nf">getProjectDiff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_project</span><span class="p">,</span> <span class="n">dst_project</span><span class="p">):</span>
+        <span class="n">packages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getPackageList</span><span class="p">(</span><span class="n">src_project</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">src_package</span> <span class="ow">in</span> <span class="n">packages</span><span class="p">:</span>
+            <span class="n">diff</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">server_diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span><span class="p">,</span>
+                                <span class="n">dst_project</span><span class="p">,</span> <span class="n">src_package</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span>
+                                <span class="n">src_project</span><span class="p">,</span> <span class="n">src_package</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+            <span class="k">print</span> <span class="n">diff</span>
+
+    <span class="k">def</span> <span class="nf">getPackageList</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prj</span><span class="p">,</span> <span class="n">deleted</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">deleted</span><span class="p">:</span>
+           <span class="n">query</span><span class="p">[</span><span class="s">&#39;deleted&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="n">u</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">makeurl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;source&#39;</span><span class="p">,</span> <span class="n">prj</span><span class="p">],</span> <span class="n">query</span><span class="p">)</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">http_GET</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">ElementTree</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">[</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">root</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&#39;entry&#39;</span><span class="p">)</span> <span class="p">]</span>
+
 <div class="viewcode-block" id="BuildService.getBinaryList"><a class="viewcode-back" href="../buildservice.html#api.BuildService.getBinaryList">[docs]</a>    <span class="k">def</span> <span class="nf">getBinaryList</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">package</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        getBinaryList(project, target, package) -&gt; list</span>
@@ -594,6 +634,68 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">show_project_meta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span><span class="p">,</span> <span class="n">project</span><span class="p">))</span>
 </div>
+<div class="viewcode-block" id="BuildService.getProjectData"><a class="viewcode-back" href="../buildservice.html#api.BuildService.getProjectData">[docs]</a>    <span class="k">def</span> <span class="nf">getProjectData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">tag</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        getProjectData(project, tag) -&gt; list</span>
+<span class="sd">        </span>
+<span class="sd">        Return a string list if node has text, else return the values dict list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">tree</span> <span class="o">=</span> <span class="n">ElementTree</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getProjectMeta</span><span class="p">(</span><span class="n">project</span><span class="p">))</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+                <span class="n">node_value</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">node_value</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">node_value</span><span class="p">:</span>
+                    <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node_value</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">data</span>
+</div>
+<div class="viewcode-block" id="BuildService.getProjectPersons"><a class="viewcode-back" href="../buildservice.html#api.BuildService.getProjectPersons">[docs]</a>    <span class="k">def</span> <span class="nf">getProjectPersons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">role</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        getProjectPersons(project, role) -&gt; list</span>
+<span class="sd">        </span>
+<span class="sd">        Return a userid list in this project with this role</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">userids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">persons</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getProjectData</span><span class="p">(</span><span class="n">project</span><span class="p">,</span> <span class="s">&#39;person&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">persons</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;role&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">person</span><span class="p">[</span><span class="s">&#39;role&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">role</span><span class="p">:</span>
+                <span class="n">userids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">person</span><span class="p">[</span><span class="s">&#39;userid&#39;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">userids</span>
+</div>
+<div class="viewcode-block" id="BuildService.getProjectDevel"><a class="viewcode-back" href="../buildservice.html#api.BuildService.getProjectDevel">[docs]</a>    <span class="k">def</span> <span class="nf">getProjectDevel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        getProjectDevel(project) -&gt; tuple (devel_prj, devel_pkg)</span>
+
+<span class="sd">        Return the devel tuple of a project if it has the node, else return None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">devels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getProjectData</span><span class="p">(</span><span class="n">project</span><span class="p">,</span> <span class="s">&#39;devel&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">devel</span> <span class="ow">in</span> <span class="n">devels</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">devel</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;project&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">devel</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;package&#39;</span><span class="p">):</span>
+                <span class="k">return</span> <span class="p">(</span><span class="n">devel</span><span class="p">[</span><span class="s">&#39;project&#39;</span><span class="p">],</span> <span class="n">devel</span><span class="p">[</span><span class="s">&#39;package&#39;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">None</span>
+</div>
+<div class="viewcode-block" id="BuildService.deleteProject"><a class="viewcode-back" href="../buildservice.html#api.BuildService.deleteProject">[docs]</a>    <span class="k">def</span> <span class="nf">deleteProject</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        deleteProject(project)</span>
+<span class="sd">        </span>
+<span class="sd">        Delete the specific project</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">core</span><span class="o">.</span><span class="n">delete_project</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span><span class="p">,</span> <span class="n">project</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+            
+        <span class="k">return</span> <span class="bp">True</span>
+</div>
 <div class="viewcode-block" id="BuildService.getPackageMeta"><a class="viewcode-back" href="../buildservice.html#api.BuildService.getPackageMeta">[docs]</a>    <span class="k">def</span> <span class="nf">getPackageMeta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">package</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        getPackageMeta(project, package) -&gt; string</span>
@@ -601,6 +703,68 @@
 <span class="sd">        Get XML metadata for package in project</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">show_package_meta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">package</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="BuildService.getPackageData"><a class="viewcode-back" href="../buildservice.html#api.BuildService.getPackageData">[docs]</a>    <span class="k">def</span> <span class="nf">getPackageData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">tag</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        getPackageData(project, package, tag) -&gt; list</span>
+<span class="sd">        </span>
+<span class="sd">        Return a string list if node has text, else return the values dict list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">tree</span> <span class="o">=</span> <span class="n">ElementTree</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getPackageMeta</span><span class="p">(</span><span class="n">project</span><span class="p">,</span> <span class="n">package</span><span class="p">))</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+                <span class="n">node_value</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">node_value</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">node_value</span><span class="p">:</span>
+                    <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node_value</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">data</span>
+</div>
+<div class="viewcode-block" id="BuildService.getPackagePersons"><a class="viewcode-back" href="../buildservice.html#api.BuildService.getPackagePersons">[docs]</a>    <span class="k">def</span> <span class="nf">getPackagePersons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">role</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        getPackagePersons(project, package, role) -&gt; list</span>
+<span class="sd">        </span>
+<span class="sd">        Return a userid list in the package with this role</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">userids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">persons</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getPackageData</span><span class="p">(</span><span class="n">project</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="s">&#39;person&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">person</span> <span class="ow">in</span> <span class="n">persons</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">person</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;role&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">person</span><span class="p">[</span><span class="s">&#39;role&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">role</span><span class="p">:</span>
+                <span class="n">userids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">person</span><span class="p">[</span><span class="s">&#39;userid&#39;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">userids</span>
+</div>
+<div class="viewcode-block" id="BuildService.getPackageDevel"><a class="viewcode-back" href="../buildservice.html#api.BuildService.getPackageDevel">[docs]</a>    <span class="k">def</span> <span class="nf">getPackageDevel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">package</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        getPackageDevel(project, package) -&gt; tuple (devel_prj, devel_pkg)</span>
+<span class="sd">        </span>
+<span class="sd">        Return the devel tuple of a package if it has the node, else return None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">devels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getPackageData</span><span class="p">(</span><span class="n">project</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="s">&#39;devel&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">devel</span> <span class="ow">in</span> <span class="n">devels</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">devel</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;project&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">devel</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s">&#39;package&#39;</span><span class="p">):</span>
+                <span class="k">return</span> <span class="p">(</span><span class="n">devel</span><span class="p">[</span><span class="s">&#39;project&#39;</span><span class="p">],</span> <span class="n">devel</span><span class="p">[</span><span class="s">&#39;package&#39;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="bp">None</span>
+</div>
+<div class="viewcode-block" id="BuildService.deletePackage"><a class="viewcode-back" href="../buildservice.html#api.BuildService.deletePackage">[docs]</a>    <span class="k">def</span> <span class="nf">deletePackage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">package</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        deletePackage(project, package)</span>
+<span class="sd">        </span>
+<span class="sd">        Delete the specific package in project</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">core</span><span class="o">.</span><span class="n">delete_package</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">package</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+            
+        <span class="k">return</span> <span class="bp">True</span>
 </div>
 <div class="viewcode-block" id="BuildService.projectFlags"><a class="viewcode-back" href="../buildservice.html#api.BuildService.projectFlags">[docs]</a>    <span class="k">def</span> <span class="nf">projectFlags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -719,9 +883,72 @@
                 <span class="k">for</span> <span class="n">arch</span> <span class="ow">in</span> <span class="n">repo</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;arch&quot;</span><span class="p">):</span>
                     <span class="n">archs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">arch</span><span class="o">.</span><span class="n">text</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">archs</span>
+</div>
+    <span class="k">def</span> <span class="nf">isPackageSucceeded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">repository</span><span class="p">,</span> <span class="n">pkg</span><span class="p">,</span> <span class="n">arch</span><span class="p">):</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">get_package_results</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">pkg</span><span class="p">,</span> 
+                                           <span class="n">repository</span> <span class="o">=</span> <span class="p">[</span><span class="n">repository</span><span class="p">],</span>
+                                           <span class="n">arch</span><span class="o">=</span><span class="p">[</span><span class="n">arch</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s">&#39;code&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s">&quot;succeeded&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">return</span> <span class="bp">True</span>
 
+    <span class="k">def</span> <span class="nf">getPackageDepends</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">repository</span><span class="p">,</span> <span class="n">pkg</span><span class="p">,</span> <span class="n">arch</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">xml</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">get_dependson</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">repository</span><span class="p">,</span> <span class="n">arch</span><span class="p">,</span> 
+                                 <span class="n">packages</span><span class="o">=</span><span class="p">[</span><span class="n">pkg</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">tree</span> <span class="o">=</span>  <span class="n">ElementTree</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">xml</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">package</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&#39;package&#39;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">package</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">query</span><span class="p">):</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dep</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">p</span>
 
-</div></div>
+    <span class="k">def</span> <span class="nf">getPackageSubpkgs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">repository</span><span class="p">,</span> <span class="n">pkg</span><span class="p">,</span> <span class="n">arch</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getPackageDepends</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">repository</span><span class="p">,</span> <span class="n">pkg</span><span class="p">,</span> <span class="n">arch</span><span class="p">,</span>
+                <span class="s">&quot;subpkg&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">getPackageReverseDepends</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">repository</span><span class="p">,</span> <span class="n">pkg</span><span class="p">,</span> <span class="n">arch</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getPackageDepends</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">repository</span><span class="p">,</span> <span class="n">pkg</span><span class="p">,</span> <span class="n">arch</span><span class="p">,</span>
+                <span class="s">&quot;pkgdep&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">getPackageRev</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">pkg</span><span class="p">):</span>
+        <span class="n">xml</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">show_files_meta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">pkg</span><span class="p">,</span> <span class="n">expand</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">tree</span> <span class="o">=</span>  <span class="n">ElementTree</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">xml</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">tree</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;rev&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">getPackageFileList</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">pkg</span><span class="p">,</span> <span class="n">revision</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">revision</span><span class="p">:</span>
+            <span class="n">revision</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getPackageRev</span><span class="p">(</span><span class="n">project</span><span class="p">,</span> <span class="n">pkg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">core</span><span class="o">.</span><span class="n">meta_get_filelist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">pkg</span><span class="p">,</span>
+                                          <span class="n">expand</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">revision</span><span class="o">=</span><span class="n">revision</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">getFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">pkg</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">revision</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">revision</span><span class="p">:</span>
+            <span class="n">revision</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getPackageRev</span><span class="p">(</span><span class="n">project</span><span class="p">,</span> <span class="n">pkg</span><span class="p">)</span>
+
+        <span class="n">u</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">makeurl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;source&#39;</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">pkg</span><span class="p">,</span> <span class="n">filename</span><span class="p">],</span>
+                             <span class="n">query</span><span class="o">=</span><span class="p">{</span><span class="s">&quot;rev&quot;</span><span class="p">:</span><span class="n">revision</span><span class="p">})</span>
+        <span class="k">for</span> <span class="n">chunks</span> <span class="ow">in</span> <span class="n">core</span><span class="o">.</span><span class="n">streamfile</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">+=</span> <span class="n">chunks</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">def</span> <span class="nf">setRequestState</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rid</span><span class="p">,</span> <span class="n">new_state</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+         <span class="n">ret</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">change_request_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span><span class="p">,</span> <span class="n">rid</span><span class="p">,</span> <span class="n">new_state</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+         <span class="k">if</span> <span class="n">ret</span> <span class="o">==</span> <span class="s">&quot;ok&quot;</span><span class="p">:</span>
+             <span class="k">return</span> <span class="bp">True</span>
+         <span class="k">else</span><span class="p">:</span>
+             <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">wipeBinaries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">):</span>
+        <span class="n">core</span><span class="o">.</span><span class="n">wipebinaries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apiurl</span><span class="p">,</span> <span class="n">project</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">getPackageResults</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">repository</span><span class="p">,</span> <span class="n">pkg</span><span class="p">,</span> <span class="n">arch</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">core</span><span class="o">.</span><span class="n">get_package_results</span><span class="p">(</span><span class="n">apiurl</span><span class="p">,</span> <span class="n">prj</span><span class="p">,</span> <span class="n">pkg</span><span class="p">,</span> <span class="n">repository</span><span class="o">=</span><span class="p">[</span><span class="n">repo</span><span class="p">],</span>
+                                        <span class="n">arch</span><span class="o">=</span><span class="p">[</span><span class="n">arch</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+
+</div>
 <div class="viewcode-block" id="ProjectFlags"><a class="viewcode-back" href="../buildservice.html#api.ProjectFlags">[docs]</a><span class="k">class</span> <span class="nc">ProjectFlags</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    ProjectFlags(bs, project)</span>

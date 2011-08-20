@@ -1,3 +1,10 @@
+python-buildservice (0.3.2-1) experimental; urgency=low
+
+  * A few more methods
+  * Include documentation in build.
+
+ -- Islam Amer <islam.amer@nokia.com>  Sat, 20 Aug 2011 15:04:31 +0300
+
 python-buildservice (0.3.1-1) experimental; urgency=low
 
   * Don't ship or use /etc/oscrc anymore

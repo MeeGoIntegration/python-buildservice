@@ -771,8 +771,8 @@ class BuildService():
         else:
             query['rev'] = 'latest'
     
-        u = makeurl(self.apiurl, ['source', project, package], query=query)
-        f = http_GET(u)
+        u = core.makeurl(self.apiurl, ['source', project, package], query=query)
+        f = core.http_GET(u)
         root = ElementTree.parse(f).getroot()
         return root.get("srcmd5")
 
@@ -785,13 +785,13 @@ class BuildService():
         Returns False if there is no change, otherwise returns True
         """
         try:
-            tsrcmd5 = getPackageChecksum(tprj, tpkg)
-        except HTTPError, e:
+            tsrcmd5 = self.getPackageChecksum(tprj, tpkg)
+        except urllib2.HTTPError, e:
             if e.code == 404:
                 return True
             else:
                 raise
-        osrcmd5 = getPackageChecksum(oprj, opkg, rev=orev)
+        osrcmd5 = self.getPackageChecksum(oprj, opkg, rev=orev)
         if osrcmd5 == tsrcmd5:
             return False
         return True
@@ -897,8 +897,22 @@ class BuildService():
         core.wipebinaries(self.apiurl, project)
 
     def getPackageResults(self, project, repository, pkg, arch):
-        return core.get_package_results(apiurl, prj, pkg, repository=[repo],
+        return core.get_package_results(self.apiurl, project, pkg,
+                                        repository=[repository],
                                         arch=[arch])[0]
+
+    def getProjectResults(self, project):
+        results = {}
+        tree = ElementTree.fromstring(''.join(core.show_prj_results_meta(self.apiurl, project)))
+        for result in tree.findall('result'):
+            target = '/'.join((result.get('repository'), result.get('arch')))
+            results[target] = {}
+            for status in result:
+                pkg = status.get("package")
+                code = status.get("code")
+                results[target][pkg] = code
+
+        return results
 
 
 class ProjectFlags(object):

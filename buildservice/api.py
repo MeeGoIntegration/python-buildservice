@@ -901,6 +901,23 @@ class BuildService():
                                         repository=[repository],
                                         arch=[arch])[0]
 
+    def getTargetRepo(self, prj, target_project, target_repository,
+                      target_archs):
+        """ Find a repo that builds only against one target for certain
+            archs """
+
+        target = "%s/%s" % (target_project, target_repository)
+        prj_repos = self.getProjectRepositories(prj)
+        if prj_repos:
+            for repo in prj_repos:
+                repo_targets = self.getRepositoryTargets(prj, repo)
+                if len(repo_targets == 1 ):
+                    if target in repo_targets:
+                        repo_archs = self.getRepositoryArchs(prj, repo)
+                        if set(target_archs).issubset(repo_archs):
+                            return repo
+        return False
+
     def getProjectResults(self, project):
         results = {}
         tree = ElementTree.fromstring(''.join(core.show_prj_results_meta(self.apiurl, project)))
@@ -913,6 +930,16 @@ class BuildService():
                 results[target][pkg] = code
 
         return results
+
+    def getRepoResults(self, project, repository):
+        repo_results = {}
+        prj_results = self.getProjectResults(project)
+        for repo_arch , result in prj_results.items():
+            repo , arch = repo_arch.split("/")
+            if repo == repository:
+                repo_results[arch] = result
+
+        return repo_results
 
 
 class ProjectFlags(object):

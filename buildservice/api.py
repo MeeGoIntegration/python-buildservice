@@ -911,7 +911,7 @@ class BuildService():
         if prj_repos:
             for repo in prj_repos:
                 repo_targets = self.getRepositoryTargets(prj, repo)
-                if len(repo_targets == 1 ):
+                if len(repo_targets) == 1:
                     if target in repo_targets:
                         repo_archs = self.getRepositoryArchs(prj, repo)
                         if set(target_archs).issubset(repo_archs):

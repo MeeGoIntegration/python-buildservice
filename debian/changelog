@@ -1,3 +1,9 @@
+python-buildservice (0.3.3-1) experimental; urgency=low
+
+  * Some more methods used by resolverequest participants
+
+ -- Islam Amer <islam.amer@nokia.com>  Sun, 28 Aug 2011 15:41:18 +0300
+
 python-buildservice (0.3.2-1) experimental; urgency=low
 
   * A few more methods

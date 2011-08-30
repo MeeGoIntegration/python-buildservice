@@ -313,7 +313,10 @@ class BuildService():
 
     def getRepoState(self, project):
         targets = {}
-        tree = ElementTree.fromstring(''.join(core.show_prj_results_meta(self.apiurl, project)))
+        results = core.show_prj_results_meta(self.apiurl, project)
+        if not results:
+            return None
+        tree = ElementTree.fromstring(''.join(results))
         for result in tree.findall('result'):
             targets[('/'.join((result.get('repository'), result.get('arch'))))] = result.get('state')
         return targets

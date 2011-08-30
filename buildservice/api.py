@@ -330,9 +330,10 @@ class BuildService():
 
         targets is a list of targets, corresponding to the result code lists
         """
+        results = core.show_prj_results_meta(self.apiurl, project)
+        tree = ElementTree.fromstring(''.join(results))
         results = {}
         targets = []
-        tree = ElementTree.fromstring(''.join(core.show_prj_results_meta(self.apiurl, project)))
         for result in tree.findall('result'):
             targets.append('/'.join((result.get('repository'), result.get('arch'))))
             for status in result.findall('status'):

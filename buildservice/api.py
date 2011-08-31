@@ -315,7 +315,7 @@ class BuildService():
         targets = {}
         results = core.show_prj_results_meta(self.apiurl, project)
         if not results:
-            return None
+            return {}
         tree = ElementTree.fromstring(''.join(results))
         for result in tree.findall('result'):
             targets[('/'.join((result.get('repository'), result.get('arch'))))] = result.get('state')
@@ -927,7 +927,7 @@ class BuildService():
     def getProjectResults(self, project):
         results = core.show_prj_results_meta(self.apiurl, project)
         if not results:
-            return None
+            return {}
         tree = ElementTree.fromstring(''.join(results))
         results = {}
         for result in tree.findall('result'):

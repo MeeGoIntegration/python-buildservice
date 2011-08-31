@@ -1,3 +1,10 @@
+python-buildservice (0.3.4-1) experimental; urgency=low
+
+  * Guard against some null responses
+  * Use mint_master as a branch on main project untile merges agreed
+
+ -- David Greaves <david@dgreaves.com>  Wed, 31 Aug 2011 14:21:18 +0000
+
 python-buildservice (0.3.3-1) experimental; urgency=low
 
   * Some more methods used by resolverequest participants

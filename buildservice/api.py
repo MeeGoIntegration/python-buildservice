@@ -1139,7 +1139,12 @@ class BuildService():
     def hist_to_dict(self, hist):
         return(self.state_to_dict(hist))
 
-
+    def setProjectPattern(self, project, pattern):
+        core.edit_meta(metatype="pattern",
+                       path_args=(project, pattern),
+                       edit=True,
+                       template_args=None,
+                       apiurl=self.apiurl)
 
 
 class ProjectFlags(object):

@@ -892,6 +892,25 @@ class BuildService():
             data += chunks
         return data
 
+    def addReview(self, rid, msg, user):
+        query = {'cmd': 'addreview', 'by_user' : user }
+        u = core.makeurl(self.apiurl, ['request', rid], query=query)
+        f = core.http_POST(u, data=msg)
+        root = ElementTree.parse(f).getroot()
+        ret = root.get('code')
+        if ret == "ok":
+            return True
+        else:
+            return False
+
+    def setReviewState(self, rid, new_state, msg, user):
+        ret = core.change_review_state(self.apiurl, rid, new_state,
+                                        message=msg, by_user=user)
+        if ret == "ok":
+            return True
+        else:
+            return False
+
     def setRequestState(self, rid, new_state, msg):
          ret = core.change_request_state(self.apiurl, rid, new_state, message=msg)
          if ret == "ok":

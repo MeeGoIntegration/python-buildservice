@@ -26,6 +26,25 @@ import urllib2
 import xml.etree.cElementTree as ElementTree
 from osc import conf, core
 
+prj_link_template = """\
+<project name="%(name)s">
+
+  <title>%(title)s</title>
+  <description>%(description)s</description>
+
+  <person role="maintainer" userid="%(user)s" />
+  <person role="bugowner" userid="%(user)s" />
+
+  <link project="%(link_source)s"/>
+
+  <repository name="%(repository)s" linkedbuild="%(build_mech)s">
+    <path project="%(link_source)s" repository="%(repository)s" />
+    %(archs)s
+  </repository>
+
+</project>
+"""
+
 def flag2bool(flag):
     """
     flag2bool(flag) -> Boolean
@@ -969,6 +988,29 @@ class BuildService():
 
         return repo_results
 
+    def createProjectLink(self, link_source, repository, archs, link_target):
+        arch_string = ""
+        for arch in archs:
+            arch_string += "<arch>%s</arch>" % arch
+        title = "Project link to %s" % link_source
+        args = { "link_source" : link_source,
+                 "name" : link_target,
+                 "user" : self.getUserName(),
+                 "title" : title,
+                 "description" : "",
+                 "repository" : repository,
+                 "archs" : arch_string,
+                 "build_mech" : "localdep"
+               }
+        meta = prj_link_template % args
+        u = core.makeurl(self.apiurl, ['source', link_target, '_meta'])
+        f = core.http_PUT(u, data=meta)
+        root = ElementTree.parse(f).getroot()
+        ret = root.get('code')
+        if ret == "ok":
+            return True
+        else:
+            return False
 
 class ProjectFlags(object):
     """

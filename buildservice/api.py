@@ -185,15 +185,15 @@ class BuildService():
 
         src_project = req.actions[0].src_project
         src_package = req.actions[0].src_package
-        dst_project = req.actions[0].dst_project
-        dst_package = req.actions[0].dst_package
+        tgt_project = req.actions[0].tgt_project
+        tgt_package = req.actions[0].tgt_package
         src_rev = req.actions[0].src_rev
 
-        # Check whether the dst pac is a new one
+        # Check whether the tgt pac is a new one
         new_pkg = False
         try:
             core.meta_exists(metatype = 'pkg',
-                        path_args = (core.quote_plus(dst_project), core.quote_plus(dst_package)),
+                        path_args = (core.quote_plus(tgt_project), core.quote_plus(tgt_package)),
                         create_new = False,
                         apiurl = self.apiurl)
         except urllib2.HTTPError, e:
@@ -213,7 +213,7 @@ class BuildService():
                 elif f.endswith(".yaml"):
                     yaml_file = f
 
-            reqinfo += 'This is a NEW package in %s project.\n' % dst_project
+            reqinfo += 'This is a NEW package in %s project.\n' % tgt_project
 
             reqinfo += 'The files in the new package:\n'
             reqinfo += '%s/\n' % src_package
@@ -236,7 +236,7 @@ class BuildService():
         else:
             try:
                 diff = core.server_diff(self.apiurl,
-                                    dst_project, dst_package, None,
+                                    tgt_project, tgt_package, None,
                                     src_project, src_package, src_rev, False)
 
                 try:

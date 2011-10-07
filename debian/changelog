@@ -1,3 +1,9 @@
+python-buildservice (0.3.5-1) experimental; urgency=low
+
+  * Add *_to_dict methods to support json-ising data and use in templates
+
+ -- David Greaves <david@dgreaves.com>  Fri, 07 Oct 2011 12:52:29 +0000
+
 python-buildservice (0.3.4-1) experimental; urgency=low
 
   * Guard against some null responses

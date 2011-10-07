@@ -1012,6 +1012,77 @@ class BuildService():
         else:
             return False
 
+    # Series of methods to convert some objects to dicts
+    # in order to emit as json.
+    # FIXME: should migrate to core
+    def req_to_dict(self, req, action_diff=False):
+        """serialize Request object to a dict
+        Includes Action diffs if action_diff is True
+        """
+        root = {}
+        if not req.reqid is None:
+            root['id'] = req.reqid
+        for action in req.actions:
+            if 'actions' not in root:
+                root['actions'] = []
+            root['actions'].append(self.action_to_dict(action, diff=action_diff))
+        if not req.state is None:
+            root['state'] = self.state_to_dict(req.state)
+        for review in req.reviews:
+            if 'reviews' not in root:
+                root['reviews'] = []
+            root['reviews'].append(self.review_to_dict(review))
+        for hist in req.statehistory:
+            if 'statehistory' not in root:
+                root['statehistory'] = []
+            root['statehistory'].append(self.hist_to_dict(hist))
+        if req.title:
+            root['title'] = req.title
+        if req.description:
+            root['description'] = req.description
+        return root
+
+    def action_to_dict(self, action, diff=False):
+        """serialize Action object to a dict"""
+        root={}
+        root['type'] = action.type
+
+        for i in core.Action.type_args[action.type]:
+            prefix, attr = i.split('_', 1)
+            val = getattr(action, i)
+            if val is None:
+                continue
+            elm = core.Action.prefix_to_elm.get(prefix, prefix)
+            if elm not in root:
+                root[elm]={}
+            if prefix == 'opt':
+                root['options'][attr] = val
+            else:
+                root[elm][attr] = val
+        if diff and action.type == "submit":
+            root['diff'] = core.submit_action_diff(self.apiurl, action)
+        return root
+
+    def state_to_dict(self, state):
+        """serialize Abstractstate object to a dict"""
+        root={}
+        root['state'] = state.get_node_name()
+        for attr in state.get_node_attrs():
+            val = getattr(state, attr)
+            if not val is None:
+                root[attr] = val
+        if state.get_comment():
+            root['comment'] = state.get_comment()
+        return root
+
+    def review_to_dict(self, review):
+        return(self.state_to_dict(review))
+
+    def hist_to_dict(self, hist):
+        return(self.state_to_dict(hist))
+
+
+
 class ProjectFlags(object):
     """
     ProjectFlags(bs, project)

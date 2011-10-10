@@ -1012,6 +1012,38 @@ class BuildService():
         else:
             return False
 
+    def checkProjectAttribute(self, project, attribute):
+        u = core.makeurl(self.apiurl, ['source',
+                                       project,
+                                       '_attribute'])
+        f = core.http_GET(u)
+        xml = ElementTree.parse(f).getroot()
+        return '%s'%attribute in [child.get('name') for child in xml.getchildren()]
+
+    def toggleProjectAttribute(self, project, attribute, delete=False):
+        u = core.makeurl(self.apiurl, ['source',
+                                       project,
+                                       '_attribute'])
+        xml = """
+        <attributes>
+        <attribute namespace='OBS' name='%s'>
+        </attribute>
+        </attributes>
+        """%attribute
+        if not delete:
+            f = core.http_POST(u, data=xml)
+        else:
+            u = core.makeurl(self.apiurl, ['source',
+                                           project,
+                                           '_attribute',
+                                           'OBS:%s'%attribute])
+            f = core.http_DELETE(u)
+        root = ElementTree.parse(f).getroot()
+        ret = root.get('code')
+        if ret == "ok":
+            return True
+        else:
+            return False
     # Series of methods to convert some objects to dicts
     # in order to emit as json.
     # FIXME: should migrate to core

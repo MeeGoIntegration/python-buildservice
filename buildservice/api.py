@@ -24,6 +24,7 @@ import time
 import urlparse
 import urllib2
 import xml.etree.cElementTree as ElementTree
+from urllib2 import HTTPError
 from osc import conf, core
 
 prj_link_template = """\

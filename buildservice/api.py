@@ -1012,15 +1012,15 @@ class BuildService():
         else:
             return False
 
-    def checkProjectAttribute(self, project, attribute):
+    def projectAttributeExists(self, project, attribute):
         u = core.makeurl(self.apiurl, ['source',
                                        project,
                                        '_attribute'])
         f = core.http_GET(u)
         xml = ElementTree.parse(f).getroot()
-        return '%s'%attribute in [child.get('name') for child in xml.getchildren()]
+        return '%s' % attribute in [child.get('name') for child in xml.getchildren()]
 
-    def toggleProjectAttribute(self, project, attribute, delete=False):
+    def createProjectAttribute(self, project, attribute):
         u = core.makeurl(self.apiurl, ['source',
                                        project,
                                        '_attribute'])
@@ -1030,14 +1030,23 @@ class BuildService():
         </attribute>
         </attributes>
         """%attribute
-        if not delete:
-            f = core.http_POST(u, data=xml)
+        f = core.http_POST(u, data=xml)
+        root = ElementTree.parse(f).getroot()
+        ret = root.get('code')
+        if ret == "ok":
+            return True
         else:
-            u = core.makeurl(self.apiurl, ['source',
+            return False
+
+    def deleteProjectAttribute(self, project, attribute):
+        u = core.makeurl(self.apiurl, ['source',
                                            project,
                                            '_attribute',
                                            'OBS:%s'%attribute])
+        try:
             f = core.http_DELETE(u)
+        except HTTPError:
+            return False
         root = ElementTree.parse(f).getroot()
         ret = root.get('code')
         if ret == "ok":
@@ -1112,6 +1121,7 @@ class BuildService():
 
     def hist_to_dict(self, hist):
         return(self.state_to_dict(hist))
+
 
 
 

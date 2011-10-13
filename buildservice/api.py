@@ -124,7 +124,9 @@ class BuildService():
         if not self.apiurl:
             raise RuntimeError, 'No apiurl "%s" found in %s' % (apiurl, oscrc)
 
+        # Add a couple of method aliases
         self.copyPackage = core.copy_pac
+        self.addPerson   = core.addPerson
 
     def getAPIServerList(self):
         """getAPIServerList() -> list

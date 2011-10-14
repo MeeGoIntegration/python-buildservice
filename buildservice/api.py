@@ -1019,7 +1019,7 @@ class BuildService():
                                        '_attribute'])
         f = core.http_GET(u)
         xml = ElementTree.parse(f).getroot()
-        return '%s' % attribute in [child.get('name') for child in xml.getchildren()]
+        return attribute in [child.get('name') for child in xml.getchildren()]
 
     def createProjectAttribute(self, project, attribute):
         u = core.makeurl(self.apiurl, ['source',

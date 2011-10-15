@@ -912,8 +912,14 @@ class BuildService():
             data += chunks
         return data
 
-    def addReview(self, rid, msg, user):
-        query = {'cmd': 'addreview', 'by_user' : user }
+    def addReview(self, rid, msg, user=None, group=None):
+        if user :
+            query = {'cmd': 'addreview', 'by_user' : user }
+        elif group:
+            query = {'cmd': 'addreview', 'by_group' : group }
+        else:
+            return False
+
         u = core.makeurl(self.apiurl, ['request', rid], query=query)
         f = core.http_POST(u, data=msg)
         root = ElementTree.parse(f).getroot()

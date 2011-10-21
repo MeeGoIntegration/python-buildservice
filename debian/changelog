@@ -1,3 +1,9 @@
+python-buildservice (0.3.9-1) experimental; urgency=low
+
+  * added setProjectPattern interface
+
+ -- Richard Braakman <ext-richard.braakman@nokia.com>  Fri, 28 Oct 2011 13:45:13 +0300
+
 python-buildservice (0.3.8-1) experimental; urgency=low
 
   * Support groups in addReview

@@ -1108,7 +1108,14 @@ class BuildService():
             else:
                 root[elm][attr] = val
         if diff and action.type == "submit":
-            root['diff'] = core.submit_action_diff(self.apiurl, action)
+            thediff = core.submit_action_diff(self.apiurl, action)
+            try:
+                root['diff'] = thediff.decode('utf-8')
+            except UnicodeDecodeError:
+                try:
+                    root['diff'] = thediff.decode('iso-8859-1')
+                except UnicodeDecodeError:
+                    root['diff'] = "Diff could not be decoded"
         return root
 
     def state_to_dict(self, state):

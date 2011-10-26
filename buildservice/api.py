@@ -395,10 +395,13 @@ class BuildService():
         for result in tree.findall('result'):
             target = '/'.join((result.get('repository'), result.get('arch')))
             statusnode = result.find('status')
-            code = statusnode.get('code')
-            details = statusnode.find('details')
-            if details is not None:
-                code += ': ' + details.text
+            if statusnode is not None:
+                code = statusnode.get('code')
+                details = statusnode.find('details')
+                if details is not None:
+                    code += ': ' + details.text
+            else:
+                code = "unknown"
             status[target] = code
         return status
 

@@ -1140,12 +1140,13 @@ class BuildService():
         return(self.state_to_dict(hist))
 
     def setProjectPattern(self, project, pattern):
-        core.edit_meta(metatype="pattern",
-                       path_args=(project, pattern),
-                       edit=True,
-                       template_args=None,
-                       apiurl=self.apiurl)
-
+        with open(pattern) as body:
+            name = os.path.basename(pattern)
+            url = core.makeurl(self.apiurl,
+                               ['source', project, '_pattern', name])
+            response = core.http_PUT(url, data=body.read())
+            ret = ElementTree.parse(response).getroot().get('code')
+            return ret == "ok"
 
 class ProjectFlags(object):
     """

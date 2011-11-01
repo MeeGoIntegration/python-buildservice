@@ -915,14 +915,26 @@ class BuildService():
             data += chunks
         return data
 
-    def addReview(self, rid, msg, user=None, group=None):
-        if user :
-            query = {'cmd': 'addreview', 'by_user' : user }
-        elif group:
-            query = {'cmd': 'addreview', 'by_group' : group }
-        else:
-            return False
+    def isType(self, name, is_type):
+        try:
+            u = core.makeurl(self.apiurl, [is_type, name])
+            f = core.http_GET(u)
+            return True
+        except HTTPError as err:
+            if err.code == 404:
+                return False
+            raise
 
+    def addReview(self, rid, msg, reviewer):
+        if self.isType(reviewer, "group"):
+            by_type = "group"
+        elif self.isType(reviewer, "person"):
+            by_type = "person"
+        else:
+            raise RuntimeError("Reviewer %s is neither a person"\
+                               " group" % reviewer)
+
+        query = {'cmd': 'addreview', by_type : reviewer }
         u = core.makeurl(self.apiurl, ['request', rid], query=query)
         f = core.http_POST(u, data=msg)
         root = ElementTree.parse(f).getroot()

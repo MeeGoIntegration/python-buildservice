@@ -1,3 +1,10 @@
+python-buildservice (0.3.10-1) experimental; urgency=low
+
+  * Added isType which asserts whether a name is group or user
+  * Changed AddReview to use isType
+
+ -- Islam Amer <islam.amer@nokia.com>  Wed, 02 Nov 2011 13:55:50 +0200
+
 python-buildservice (0.3.9-1) experimental; urgency=low
 
   * added setProjectPattern interface

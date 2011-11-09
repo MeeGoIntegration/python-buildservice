@@ -1125,7 +1125,7 @@ class BuildService():
             else:
                 root[elm][attr] = val
         if diff and action.type == "submit":
-            thediff = core.submit_action_diff(self.apiurl, action)
+            thediff = self.submit_action_diff(action)
             try:
                 root['diff'] = thediff.decode('utf-8')
             except UnicodeDecodeError:
@@ -1134,6 +1134,40 @@ class BuildService():
                 except UnicodeDecodeError:
                     root['diff'] = "Diff could not be decoded"
         return root
+
+
+    def submit_action_diff(self, action):
+        """Replaces core.submit_action_diff() to work with new packages"""
+        new_pkg = False
+        try:
+            # if target package does not exists this is new package
+            core.meta_exists(apiurl=self.apiurl, metatype='pkg',
+                    create_new=False, path_args=(
+                        core.quote_plus(action.tgt_project),
+                        core.quote_plus(action.tgt_package)
+                    ))
+        except urllib2.HTTPError, e:
+            if e.code == 404:
+                new_pkg = True
+            else:
+                raise
+        if new_pkg:
+            action.tgt_package = None
+
+        try:
+            return core.server_diff(self.apiurl, action.tgt_project,
+                    action.tgt_package, None, action.src_project,
+                    action.src_package, action.src_rev,
+                    unified=False, missingok=True)
+        except urllib2.HTTPError, e:
+            try:
+                reason = core.ET.fromstring(e.read()).find("summary").text
+            except Exception:
+                reason = "Unknown reason"
+            return "Error getting diff %s/%s <-> %s/%s rev %s\n%s" % \
+                    (action.tgt_project, action.tgt_package, action.src_project,
+                            action.src_package, action.src_rev, reason)
+
 
     def state_to_dict(self, state):
         """serialize Abstractstate object to a dict"""

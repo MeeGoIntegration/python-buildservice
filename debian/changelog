@@ -1,6 +1,7 @@
 python-buildservice (0.3.12-1) experimental; urgency=low
 
-  * Bugfix to addReview; it was using wrong parameter names
+  * Bugfix to addReview: it was using wrong parameter names
+  * Bugfix to getFile: expand link before trying to get files from it
 
  -- Richard Braakman <ext-richard.braakman@nokia.com>  Thu, 10 Nov 2011 15:43:11 +0200
 

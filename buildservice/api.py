@@ -912,7 +912,7 @@ class BuildService():
             revision = self.getPackageRev(project, pkg)
 
         u = core.makeurl(self.apiurl, ['source', project, pkg, filename],
-                             query={"rev":revision})
+                             query={"rev":revision, "expand":1})
         for chunks in core.streamfile(u):
             data += chunks
         return data

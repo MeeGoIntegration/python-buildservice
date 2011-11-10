@@ -929,9 +929,9 @@ class BuildService():
 
     def addReview(self, rid, msg, reviewer):
         if self.isType(reviewer, "group"):
-            by_type = "group"
+            by_type = "by_group"
         elif self.isType(reviewer, "person"):
-            by_type = "person"
+            by_type = "by_user"
         else:
             raise RuntimeError("Reviewer %s is neither person"\
                                " nor group" % reviewer)

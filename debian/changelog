@@ -1,3 +1,9 @@
+python-buildservice (0.3.12-1) experimental; urgency=low
+
+  * Bugfix to addReview; it was using wrong parameter names
+
+ -- Richard Braakman <ext-richard.braakman@nokia.com>  Thu, 10 Nov 2011 15:43:11 +0200
+
 python-buildservice (0.3.11-1) experimental; urgency=low
 
   * Fix for getting non unified diff for submit actions

@@ -443,6 +443,30 @@ class BuildService():
         (repo, arch) = target.split('/')
         core.get_binary_file(self.apiurl, project, repo, arch, file, target_filename=path, package=package)
 
+    def getBinaryInfo(self, project, target, package, binary, ext=False):
+        """
+        getBinaryInfo(project, target, package, binary, ext=False)
+
+        Get binary info for 'project', 'package' and 'target'
+
+        If ext=True get the info from build result (slower)
+        """
+        (repo, arch) = target.split('/')
+        cmd = "?view=fileinfo"
+        if ext:
+            cmd += "_ext"
+        u = core.makeurl(self.apiurl, ['build', project, repo, arch,
+                package, binary, cmd])
+        f = core.http_GET(u)
+        fileinfo = ElementTree.parse(f).getroot()
+        result = {"provides": []}
+        for node in fileinfo.getchildren():
+            if node.tag == "provides":
+                result[node.tag].append(node.text)
+            else:
+                result[node.tag] = node.text
+        return result
+
     def getBuildLog(self, project, target, package, offset=0):
         """
         getBuildLog(project, target, package, offset=0) -> str

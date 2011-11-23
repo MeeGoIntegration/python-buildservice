@@ -1,3 +1,9 @@
+python-buildservice (0.3.13-1) experimental; urgency=low
+
+  * Added getBinaryInfo() method
+
+ -- Pami Ketolainen <ext-pami.o.ketolainen@nokia.com>  Wed, 23 Nov 2011 18:32:44 +0200
+
 python-buildservice (0.3.12-1) experimental; urgency=low
 
   * Bugfix to addReview: it was using wrong parameter names

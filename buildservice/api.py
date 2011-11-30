@@ -38,12 +38,16 @@ prj_link_template = """\
 
   <link project="%(link_source)s"/>
 
+  %(repositories)s
+
+</project>
+"""
+
+repo_link_template = """\
   <repository name="%(repository)s" linkedbuild="%(build_mech)s">
     <path project="%(link_source)s" repository="%(repository)s" />
     %(archs)s
   </repository>
-
-</project>
 """
 
 def flag2bool(flag):
@@ -1036,21 +1040,26 @@ class BuildService():
 
         return repo_results
 
-    def createProjectLink(self, link_source, repository, archs, link_target):
-        arch_string = ""
-        for arch in archs:
-            arch_string += "<arch>%s</arch>" % arch
-        title = "Project link to %s" % link_source
-        args = { "link_source" : link_source,
-                 "name" : link_target,
-                 "user" : self.getUserName(),
-                 "title" : title,
-                 "description" : "",
-                 "repository" : repository,
-                 "archs" : arch_string,
-                 "build_mech" : "localdep"
-               }
-        meta = prj_link_template % args
+    def createProjectLink(self, link_source, repolinks, link_target):
+        repositories = ""
+        for repo, archs in repolinks.iteritems():
+            arch_string = ""
+            for arch in archs:
+                arch_string += "<arch>%s</arch>" % arch
+            repositories += repo_link_template % dict(
+                repository=repo,
+                build_mech="localdep",
+                link_source=link_source,
+                archs=arch_string
+                )
+        meta = prj_link_template % dict(
+            link_source=link_source,
+            name=link_target,
+            user=self.getUserName(),
+            title="Project link to %s" % link_source,
+            description="",
+            repositories=repositories,
+            )
         u = core.makeurl(self.apiurl, ['source', link_target, '_meta'])
         f = core.http_PUT(u, data=meta)
         root = ElementTree.parse(f).getroot()

@@ -1,4 +1,4 @@
-python-buildservice (0.3.14) experimental; urgency=low
+python-buildservice (0.3.14-1) experimental; urgency=low
 
   * Changed createProjectLink interface to allow multiple repositories
 

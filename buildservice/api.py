@@ -344,7 +344,14 @@ class BuildService():
             return {}
         tree = ElementTree.fromstring(''.join(results))
         for result in tree.findall('result'):
-            targets[('/'.join((result.get('repository'), result.get('arch'))))] = result.get('state')
+            target = '/'.join(result.get('repository'), result.get('arch'))
+            if result.get("dirty") == "true":
+                # If the repository is dirty state needs recalculation and
+                # cannot be trusted
+                state = "dirty"
+            else:
+                state = result.get('state')
+            targets[target] = state
         return targets
 
     def getResults(self, project):

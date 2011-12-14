@@ -1,3 +1,9 @@
+python-buildservice (0.3.15-1) experimental; urgency=low
+
+  * getRepoState obeys dirty flag
+
+ -- Islam Amer <islam.amer@nokia.com>  Wed, 14 Dec 2011 18:46:37 +0200
+
 python-buildservice (0.3.14-1) experimental; urgency=low
 
   * Changed createProjectLink interface to allow multiple repositories

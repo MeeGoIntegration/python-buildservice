@@ -967,9 +967,11 @@ class BuildService():
             by_type = "by_group"
         elif self.isType(reviewer, "person"):
             by_type = "by_user"
+        elif reviewer in getProjectList():
+            by_type = "by_project"
         else:
-            raise RuntimeError("Reviewer %s is neither person"\
-                               " nor group" % reviewer)
+            raise RuntimeError("Reviewer %s is not a person,"\
+                               " group or project" % reviewer)
 
         query = {'cmd': 'addreview', by_type : reviewer }
         u = core.makeurl(self.apiurl, ['request', rid], query=query)

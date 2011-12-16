@@ -967,7 +967,7 @@ class BuildService():
             objtype = "group"
         elif self.isType(name, "person"):
             objtype = "user"
-        elif name in getProjectList():
+        elif name in self.getProjectList():
             objtype = "project"
         else:
             objtype = "unknown"
@@ -1244,6 +1244,26 @@ class BuildService():
             response = core.http_PUT(url, data=body.read())
             ret = ElementTree.parse(response).getroot().get('code')
             return ret == "ok"
+
+    def getGroupUsers(self, group):
+        u = core.makeurl(self.apiurl, ["group", group])
+        try:
+            f = core.http_GET(u)
+            root = ElementTree.parse(f).getroot()
+            users = []
+            # weirdness in the OBS api person subelements are
+            # wrapped in a person subelement
+            for person in root.findall("person")[0].findall("person"):
+                if person.get("userid"):
+                    users.append(person.get("userid"))
+            return users
+        except urllib2.HTTPError as e:
+            if e.code == 404:
+                return []
+            else:
+                raise
+
+
 
 class ProjectFlags(object):
     """

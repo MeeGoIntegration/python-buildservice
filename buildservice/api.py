@@ -962,17 +962,24 @@ class BuildService():
                 return False
             raise
 
-    def addReview(self, rid, msg, reviewer):
-        if self.isType(reviewer, "group"):
-            by_type = "by_group"
-        elif self.isType(reviewer, "person"):
-            by_type = "by_user"
-        elif reviewer in getProjectList():
-            by_type = "by_project"
+    def getType(self, name):
+        if self.isType(name, "group"):
+            objtype = "group"
+        elif self.isType(name, "person"):
+            objtype = "user"
+        elif name in getProjectList():
+            objtype = "project"
         else:
+            objtype = "unknown"
+        return objtype
+
+    def addReview(self, rid, msg, reviewer):
+        reviewer_type = getType(reviewer)
+        if reviewer_type == "unknown":
             raise RuntimeError("Reviewer %s is not a person,"\
                                " group or project" % reviewer)
 
+        by_type = "by_%s" % reviewer_type
         query = {'cmd': 'addreview', by_type : reviewer }
         u = core.makeurl(self.apiurl, ['request', rid], query=query)
         f = core.http_POST(u, data=msg)

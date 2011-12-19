@@ -1,3 +1,9 @@
+python-buildservice (0.3.16-1) experimental; urgency=low
+
+  * getRepoState was broken in previous version, fixes PMO#295290
+
+ -- Islam Amer <islam.amer@nokia.com>  Mon, 19 Dec 2011 15:53:48 +0200
+
 python-buildservice (0.3.15-1) experimental; urgency=low
 
   * getRepoState obeys dirty flag

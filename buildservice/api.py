@@ -798,7 +798,11 @@ class BuildService():
 
         Get email of a user ID
         """
-        return self.getUserData(user, "email")[0]
+        user_data = self.getUserData(user, "email")
+        if user_data:
+            return user_data[0]
+        else:
+            return ""
 
     def getProjectMaintainers(self, project):
         """

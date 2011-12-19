@@ -1,3 +1,10 @@
+python-buildservice (0.3.17-1) experimental; urgency=low
+
+  * add support for review by_project
+  * split out type getting to new getGroupUsers function so it is reusable
+
+ -- Islam Amer <islam.amer@nokia.com>  Mon, 19 Dec 2011 22:39:08 +0200
+
 python-buildservice (0.3.16-1) experimental; urgency=low
 
   * getRepoState was broken in previous version, fixes PMO#295290

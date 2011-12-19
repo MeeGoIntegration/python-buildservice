@@ -26,6 +26,7 @@ import urllib2
 import xml.etree.cElementTree as ElementTree
 from urllib2 import HTTPError
 from osc import conf, core
+from urllib import quote
 
 prj_link_template = """\
 <project name="%(name)s">
@@ -950,7 +951,7 @@ class BuildService():
         if not revision:
             revision = self.getPackageRev(project, pkg)
 
-        u = core.makeurl(self.apiurl, ['source', project, pkg, filename],
+        u = core.makeurl(self.apiurl, ['source', project, pkg, quote(filename)],
                              query={"rev":revision, "expand":1})
         for chunks in core.streamfile(u):
             data += chunks

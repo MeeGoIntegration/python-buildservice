@@ -1,7 +1,9 @@
 python-buildservice (0.3.17-1) experimental; urgency=low
 
-  * add support for review by_project
+  * add support for review by_project PMO#294706
   * split out type getting to new getGroupUsers function so it is reusable
+  * Make getUserEmail handle errors more sanely by returning an empty string
+  * quote filenamed in getFile fixes PMO#289235
 
  -- Islam Amer <islam.amer@nokia.com>  Mon, 19 Dec 2011 22:39:08 +0200
 

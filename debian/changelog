@@ -1,3 +1,9 @@
+python-buildservice (0.3.18-1) experimental; urgency=low
+
+  * Fix error in addReview introduced in previous version
+
+ -- Islam Amer <islam.amer@nokia.com>  Wed, 21 Dec 2011 16:48:26 +0200
+
 python-buildservice (0.3.17-1) experimental; urgency=low
 
   * add support for review by_project PMO#294706

@@ -979,7 +979,7 @@ class BuildService():
         return objtype
 
     def addReview(self, rid, msg, reviewer):
-        reviewer_type = getType(reviewer)
+        reviewer_type = self.getType(reviewer)
         if reviewer_type == "unknown":
             raise RuntimeError("Reviewer %s is not a person,"\
                                " group or project" % reviewer)

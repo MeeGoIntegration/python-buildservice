@@ -1241,15 +1241,29 @@ class BuildService():
     def hist_to_dict(self, hist):
         return(self.state_to_dict(hist))
 
-    def setProjectPattern(self, project, pattern):
+    def getProjectPatternsList(self, project):
+        url = core.makeurl(self.apiurl,
+                           ['source', project, '_pattern'])
+        response = core.http_GET(url)
+        root = ElementTree.parse(response).getroot()
+        return [ node.get('name') for node in root.findall('entry') ]
+        
+    def setProjectPattern(self, project, pattern, name=None):
         with open(pattern) as body:
-            name = os.path.basename(pattern)
+            if not name:
+                name = os.path.basename(pattern)
             url = core.makeurl(self.apiurl,
                                ['source', project, '_pattern', name])
             response = core.http_PUT(url, data=body.read())
             ret = ElementTree.parse(response).getroot().get('code')
             return ret == "ok"
 
+    def deleteProjectPattern(self, project, name):
+        url = core.makeurl(self.apiurl,
+                           ['source', project, '_pattern', name])
+        core.http_DELETE(url)
+        return True
+        
     def getGroupUsers(self, group):
         u = core.makeurl(self.apiurl, ["group", group])
         try:

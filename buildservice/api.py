@@ -927,11 +927,11 @@ class BuildService():
         return p
 
     def getPackageSubpkgs(self, project, repository, pkg, arch):
-        return self.getPackageDepends(self, project, repository, pkg, arch,
+        return self.getPackageDepends(project, repository, pkg, arch,
                 "subpkg")
 
     def getPackageReverseDepends(self, project, repository, pkg, arch):
-        return self.getPackageDepends(self, project, repository, pkg, arch,
+        return self.getPackageDepends(project, repository, pkg, arch,
                 "pkgdep")
 
     def getPackageRev(self, project, pkg):

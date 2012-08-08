@@ -533,7 +533,7 @@ class BuildService():
             stats.append((worker.get('arch'), int(worker.get('jobs'))))
         return stats
 
-    def getSubmitRequests(self):
+    def getSubmitRequests(self, req_state=None, start_time=None, end_time=None):
         """
         getSubmitRequests() -> list of dicts
 
@@ -542,23 +542,35 @@ class BuildService():
         f = core.http_GET(url)
         tree = ElementTree.parse(f).getroot()
         submitrequests = []
-        for sr in tree.findall('request'):
-            if sr.get('type') != "submit":
+
+        for req in tree.findall('request'):
+            state = req.find('state')
+            if req_state and state.get('name') != req_state:
                 continue
-
-            d = {'id': int(sr.get('id'))}
-            sb = sr.findall('submit')[0]
-            src = sb.findall('source')[0]
-            d['srcproject'] = src.get('project')
-            d['srcpackage'] = src.get('package')
-            dst = sb.findall('target')[0]
-            d['dstproject'] = dst.get('project')
-            d['dstpackage'] = dst.get('package')
-            d['state'] = sr.findall('state')[0].get('name')
-
-            submitrequests.append(d)
+            if start_time and state.get('when') < start_time:
+                continue
+            if end_time and state.get('when') >= end_time:
+                continue
+            
+            for action in req.findall('action'):
+                if action.get('type') != "submit":
+                    continue
+               
+                d = {'id': int(req.get('id'))}
+                src = action.find('source')
+                d['srcproject'] = src.get('project')
+                d['srcpackage'] = src.get('package')
+                dest = action.find('target')
+                d['dstproject'] = dest.get('project')
+                d['dstpackage'] = dest.get('package')
+                d['state'] = state.get('name')
+                d['when'] = state.get('when')
+                
+                submitrequests.append(d)
+                
         submitrequests.sort(key=lambda x: x['id'])
-        return submitrequests
+
+	return submitrequests
 
     def rebuild(self, project, package, target=None, code=None):
         """

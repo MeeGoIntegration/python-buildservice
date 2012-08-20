@@ -26,7 +26,7 @@ import urllib2
 import xml.etree.cElementTree as ElementTree
 from urllib2 import HTTPError
 from osc import conf, core
-from urllib import quote
+from urllib import quote, quote_plus
 
 prj_link_template = """\
 <project name="%(name)s">
@@ -533,12 +533,25 @@ class BuildService():
             stats.append((worker.get('arch'), int(worker.get('jobs'))))
         return stats
 
-    def getSubmitRequests(self, req_state=None, start_time=None, end_time=None):
+    def getSubmitRequests(self, req_state=None, start_time=None, end_time=None, projects=None):
         """
         getSubmitRequests() -> list of dicts
 
         """
-        url = core.makeurl(self.apiurl, ['search', 'request', '?match=submit'])
+        xpath = ''
+        xpath = core.xpath_join(xpath, 'action/@type=\'submit\'')
+
+        if req_state:
+            xpath = core.xpath_join(xpath, 'state/@name=\'%s\'' % req_state, op='and')
+
+        if projects:
+            xpath_base=''
+            #build list of projects
+            for i in projects:
+                xpath_base = core.xpath_join(xpath_base, 'action/target/@project=\'%s\'' % i, op='or')
+            xpath = core.xpath_join(xpath, xpath_base, op='and', nexpr_parentheses=True)
+
+        url = core.makeurl(self.apiurl, ['search', 'request', '?match=%s' %quote_plus(xpath)])
         f = core.http_GET(url)
         tree = ElementTree.parse(f).getroot()
         submitrequests = []

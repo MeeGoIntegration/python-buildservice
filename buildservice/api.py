@@ -164,6 +164,92 @@ class BuildService():
                 raise e
         return new_pkg
 
+    def createRequest(self, options_list, description, comment, **kwargs):
+        """ creates a request
+
+        options_list = a list of dicts, the valid keys in the dict depends
+                       on the value of the 'action' key, see code below and
+                       see osc/core.py. Additionally kwargs can contain the
+                       following keywords, which gets passed through:
+
+                       action = submit
+                           opt_sourceupdate = cleanup|noupdate|update
+                           acceptinfo_rev
+                           acceptinfo_srcmd5
+                           acceptinfo_xsrcmd5
+                           acceptinfo_osrcmd5
+                           acceptinfo_oxsrcmd5
+                           opt_updatelink
+
+                       action = maintenance_incident
+                           opt_sourceupdate = cleanup|noupdate|update
+
+        description = Description for the request, contains normally
+                      the description why this request was done
+
+        comment     = Comment in the state history
+        """
+
+        commentElement = ElementTree.Element("comment")
+        commentElement.text = comment
+
+        state = ElementTree.Element("state")
+        state.set("name", "new")
+        state.append(commentElement)
+
+        request = core.Request()
+        request.description = description
+        request.state = core.RequestState(state)
+
+        for item in options_list:
+            if item['action'] == "submit":
+                request.add_action(item['action'],
+                                   src_project = item['src_project'],
+                                   src_package = item['src_package'],
+                                   tgt_project = item['tgt_project'],
+                                   tgt_package = item['tgt_package'],
+                                   **kwargs)
+            elif item['action'] == "add_role":
+                request.add_action(item['action'],
+                                   tgt_project = item['tgt_project'],
+                                   tgt_package = item['tgt_package'],
+                                   person_name = item['person_name'],
+                                   person_role = item['person_role'],
+                                   group_name  = item['group_name'],
+                                   group_role  = item['group_role'])
+            elif item['action'] == "maintenance_release":
+                request.add_action(item['action'],
+                                   src_project = item['src_project'],
+                                   src_package = item['src_package'],
+                                   src_rev     = item['src_rev'],
+                                   tgt_project = item['tgt_project'],
+                                   tgt_package = item['tgt_package'])
+            elif item['action'] == "maintenance_incident":
+                request.add_action(item['action'],
+                                   src_project = item['src_project'],
+                                   src_package = item['src_package'],
+                                   src_rev     = item['src_rev'],
+                                   tgt_project = item['tgt_project'],
+                                   tgt_releaseproject
+                                        = item['tgt_releaseproject'],
+                                   person_name = item['person_name'],
+                                   **kwargs)
+            elif item['action'] == "delete":
+                request.add_action(item['action'],
+                                   tgt_project = item['tgt_project'],
+                                   tgt_package = item['tgt_package'])
+            elif item['action'] == "change_devel":
+                request.add_action(item['action'],
+                                   src_project = item['src_project'],
+                                   src_package = item['src_package'],
+                                   tgt_project = item['tgt_project'],
+                                   tgt_package = item['tgt_package'])
+            else:
+                raise RuntimeError("Unknown Action: %s" % action)
+
+        print request.to_str()
+        request.create(self.apiurl)
+
     def genRequestInfo(self, reqid, show_detail = True):
         # helper routine to cat remote file
         def get_source_file_content(apiurl, prj, pac, path, rev):

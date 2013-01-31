@@ -6,7 +6,7 @@ Group:      Development/Languages
 License:    GPLv2+
 BuildArch:  noarch
 URL:        http://meego.gitorious.org/meego-infrastructure-tools/python-buildservice
-Source0:    %{name}_%{version}.orig.tar.gz
+Source0:    %{name}-%{version}.tar.gz
 Requires:   python >= 2.5
 Requires:   osc
 BuildRequires:  python, python-sphinx, osc, python-distribute

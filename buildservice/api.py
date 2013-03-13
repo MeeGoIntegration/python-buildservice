@@ -247,8 +247,8 @@ class BuildService():
             else:
                 raise RuntimeError("Unknown Action: %s" % action)
 
-        print request.to_str()
         request.create(self.apiurl)
+        return request
 
     def genRequestInfo(self, reqid, show_detail = True):
         # helper routine to cat remote file

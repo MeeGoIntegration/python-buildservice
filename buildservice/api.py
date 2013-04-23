@@ -164,7 +164,7 @@ class BuildService():
                 raise e
         return new_pkg
 
-    def createRequest(self, options_list, description, comment, **kwargs):
+    def createRequest(self, options_list, description, comment, supersede = False, **kwargs):
         """ creates a request
 
         options_list = a list of dicts, the valid keys in the dict depends
@@ -184,6 +184,8 @@ class BuildService():
                        action = maintenance_incident
                            opt_sourceupdate = cleanup|noupdate|update
 
+        supersede   = shall old requests be superseded?
+
         description = Description for the request, contains normally
                       the description why this request was done
 
@@ -201,6 +203,7 @@ class BuildService():
         request.description = description
         request.state = core.RequestState(state)
 
+	supsersedereqs = []
         for item in options_list:
             if item['action'] == "submit":
                 request.add_action(item['action'],
@@ -209,6 +212,13 @@ class BuildService():
                                    tgt_project = item['tgt_project'],
                                    tgt_package = item['tgt_package'],
                                    **kwargs)
+
+                if supersede == True:
+	            supsersedereqs.extend(core.get_exact_request_list(self.apiurl, item['src_project'],
+                                                                      item['tgt_project'], item['src_package'],
+                                                                      item['tgt_package'], req_type='submit',
+                                                                      req_state=['new','review', 'declined']))
+
             elif item['action'] == "add_role":
                 request.add_action(item['action'],
                                    tgt_project = item['tgt_project'],
@@ -238,6 +248,13 @@ class BuildService():
                 request.add_action(item['action'],
                                    tgt_project = item['tgt_project'],
                                    tgt_package = item['tgt_package'])
+
+                if supersede == True:
+                    supsersedereqs.extend(core.get_exact_request_list(self.apiurl, None,
+                                                                      item['tgt_project'], None,
+                                                                      item['tgt_package'], req_type='delete',
+                                                                      req_state=['new','review', 'declined']))
+
             elif item['action'] == "change_devel":
                 request.add_action(item['action'],
                                    src_project = item['src_project'],
@@ -248,6 +265,18 @@ class BuildService():
                 raise RuntimeError("Unknown Action: %s" % action)
 
         request.create(self.apiurl)
+
+        if supersede == True and len(supsersedereqs) > 0:
+            processed = []
+            for req in supsersedereqs:
+                if req.reqid not in processed:
+                    processed.append(req.reqid)
+                    print "req.reqid: %s - new ID: %s\n"%(req.reqid, request.reqid)
+                    core.change_request_state(self.apiurl, req.reqid,
+                                              'superseded',
+                                              'superseded by %s' % request.reqid,
+                                              request.reqid)
+
         return request
 
     def genRequestInfo(self, reqid, show_detail = True):

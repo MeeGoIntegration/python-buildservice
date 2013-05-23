@@ -1403,6 +1403,46 @@ class BuildService():
                            ['source', project, '_pattern', name])
         core.http_DELETE(url)
         return True
+
+    def expandPatterns(self, patterns, allow_recursive = False):
+        """ expands a list of patterns to it's content
+
+            patterns(dict):
+                {'patternname':'projectname'} dict of pattern and the project
+                in which the pattern can be found
+
+            allow_recursive(bool):
+                shall pattern inside patterns be expanded too
+
+            output:
+                {'patternname':{'conflicts':[rpmlist],
+                                'requires':[rpmlist],
+                                'recommends':[rpmlist],
+                                'suggests':[rpmlist],
+                                'provides':[provideslist]
+                               }
+        """
+        ret = {}
+        for pattern in patterns.iterkeys():
+            ret[pattern] = {}
+            prj = patterns[pattern]
+            xmlPattern = core.show_pattern_meta(self.apiurl, prj, pattern)
+            root = ElementTree.fromstringlist(xmlPattern)
+            elements = ['conflicts', 'requires', 'recommends', 'suggests', 'provides']
+            for element in elements:
+                rpmpgks = []
+                for item in root.findall('{http://linux.duke.edu/metadata/rpm}' + element):
+                    for rpmpgk in item.findall("{http://linux.duke.edu/metadata/rpm}entry"):
+                        if allow_recursive and rpmpgk.attrib['name'].startswith('pattern:'):
+                            pattern_name = rpmpgk.attrib['name'].split(':',1)[1]
+                            recursive_pattern = self.getPatterns(prj, [pattern_name])
+                            rpmpgks.extend(recursive_pattern[pattern_name][element])
+                        else:
+                            rpmpgks.append(rpmpgk.attrib['name'])
+
+                ret[pattern].update({element: rpmpgks})
+
+        return ret
         
     def getGroupUsers(self, group):
         u = core.makeurl(self.apiurl, ["group", group])

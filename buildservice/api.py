@@ -28,7 +28,7 @@ from urllib2 import HTTPError
 from osc import conf, core
 from urllib import quote, quote_plus
 
-prj_link_template = """\
+prj_template = """\
 <project name="%(name)s">
 
   <title>%(title)s</title>
@@ -37,19 +37,19 @@ prj_link_template = """\
   <person role="maintainer" userid="%(user)s" />
   <person role="bugowner" userid="%(user)s" />
 
-  <link project="%(link_source)s"/>
+  %(link)s
+  %(build)s
+  %(publish)s
 
-  %(repositories)s
+%(repositories)s
 
 </project>
 """
 
-repo_link_template = """\
-  <repository name="%(repository)s" linkedbuild="%(build_mech)s">
-    <path project="%(link_source)s" repository="%(repository)s" />
-    %(archs)s
-  </repository>
-"""
+repo_template = """  <repository name="%(repository)s" %(mechanism)s">
+%(paths)s
+%(archs)s
+  </repository>\n"""
 
 def flag2bool(flag):
     """
@@ -1201,27 +1201,51 @@ class BuildService():
 
         return repo_results
 
+    # for backward comapt
     def createProjectLink(self, link_source, repolinks, link_target):
+        return self.createProject(link_target, repolinks, link=link_source)
+
+    def createProject(self, name, repos, link=None, paths=None, build=True,
+                      publish=True, mechanism="localdep"):
         repositories = ""
-        for repo, archs in repolinks.iteritems():
+        for repo, archs in repos.iteritems():
             arch_string = ""
             for arch in archs:
-                arch_string += "<arch>%s</arch>" % arch
-            repositories += repo_link_template % dict(
+                arch_string += "    <arch>%s</arch>" % arch
+            paths_string = ""
+            if paths and repo in paths:
+                for path in paths[repo]:
+                    paths_string += '    <path project="%s" repository="%s"/>\n' % path
+            mechanism_string=""
+            if link:
+                paths_string += '    <path project="%s" repository="%s"/>\n' % (link, repo)
+                mechanism_string = 'linkedbuild="%s"' % mechanism
+            repositories += repo_template % dict(
                 repository=repo,
-                build_mech="localdep",
-                link_source=link_source,
+                mechanism=mechanism_string,
+                paths=paths_string,
                 archs=arch_string
                 )
-        meta = prj_link_template % dict(
-            link_source=link_source,
-            name=link_target,
+        build_string = ""
+        if not build:
+            build_string = "<build><disable/></build>"
+        publish_string = ""
+        if not publish:
+            publish_string = "<publish><disable/></publish>"
+        link_string = ""
+        if link:
+            link_string = '<link project="%s"/>' % link
+        meta = prj_template % dict(
+            name=name,
             user=self.getUserName(),
-            title="Project link to %s" % link_source,
+            title=name,
             description="",
+            link=link_string,
+            build=build_string,
+            publish=publish_string,
             repositories=repositories,
             )
-        u = core.makeurl(self.apiurl, ['source', link_target, '_meta'])
+        u = core.makeurl(self.apiurl, ['source', name, '_meta'])
         f = core.http_PUT(u, data=meta)
         root = ElementTree.parse(f).getroot()
         ret = root.get('code')

@@ -1489,7 +1489,7 @@ class BuildService():
     def putFile(self, project, pkg, filename, filepath):
 
         u = core.makeurl(self.apiurl, ['source', project, pkg, quote(filename)])
-        core.http_PUT(u, file=filepath)
+        return core.http_PUT(u, file=filepath)
 
     def getCreatePackage(self, dst_project, dst_package):
         # Check whether the dst pac is a new one
@@ -1499,11 +1499,11 @@ class BuildService():
                         template_args = { "name" : dst_package, "user" : self.getUserName() },
                         apiurl = self.apiurl)
         u = core.makeurl(self.apiurl, ['source', dst_project, dst_package, "_meta"])
-        core.http_PUT(u, data="".join(pkg))
+        return core.http_PUT(u, data="".join(pkg))
 
     def setupService(self, dst_project, dst_package, service):
         u = core.makeurl(self.apiurl, ['source', dst_project, dst_package, "_service"])
-        core.http_PUT(u, data=service)
+        return core.http_PUT(u, data=service)
 
 
 class ProjectFlags(object):

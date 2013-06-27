@@ -1428,15 +1428,26 @@ class BuildService():
         core.http_DELETE(url)
         return True
 
-    def expandPatterns(self, patterns, allow_recursive = False):
+    def expandPatterns(self, patterns, depth = 0, projects = [], patterns_prefetch=None, keep_patterns=False):
         """ expands a list of patterns to it's content
 
             patterns(dict):
                 {'patternname':'projectname'} dict of pattern and the project
                 in which the pattern can be found
 
-            allow_recursive(bool):
-                shall pattern inside patterns be expanded too
+            depth(int):
+                how many layers deep should nested patterns be expanded
+                (0 for none, -1 for infinite)
+
+            projects(list):
+                list of project names to look at when expanding patterns recursively
+
+            patterns_prefetch(dict):
+                dict of lists, project name is key and list of patterns is value. Passed
+                by reference when recursively expanding
+
+            keep_patterns(bool):
+                nested pattern names are added to the requires in the result
 
             output:
                 {'patternname':{'conflicts':[rpmlist],
@@ -1447,9 +1458,17 @@ class BuildService():
                                }
         """
         ret = {}
-        for pattern in patterns.iterkeys():
+        if depth:
+            for _, prj in patterns.items():
+                if not prj in projects:
+                    projects.append(prj)
+            if not patterns_prefetch:
+                patterns_prefetch={}
+                for prj in projects:
+                    patterns_prefetch.update({prj : self.getProjectPatternsList(prj)})
+
+        for pattern, prj in patterns.items():
             ret[pattern] = {}
-            prj = patterns[pattern]
             xmlPattern = core.show_pattern_meta(self.apiurl, prj, pattern)
             root = ElementTree.fromstringlist(xmlPattern)
             elements = ['conflicts', 'requires', 'recommends', 'suggests', 'provides']
@@ -1457,12 +1476,15 @@ class BuildService():
                 rpmpgks = []
                 for item in root.findall('{http://linux.duke.edu/metadata/rpm}' + element):
                     for rpmpgk in item.findall("{http://linux.duke.edu/metadata/rpm}entry"):
-                        if allow_recursive and rpmpgk.attrib['name'].startswith('pattern:'):
-                            pattern_name = rpmpgk.attrib['name'].split(':',1)[1]
-                            recursive_pattern = self.getPatterns(prj, [pattern_name])
-                            rpmpgks.extend(recursive_pattern[pattern_name][element])
-                        else:
-                            rpmpgks.append(rpmpgk.attrib['name'])
+                        name = rpmpgk.attrib['name']
+                        if depth and name.startswith('pattern:'):
+                            name = name.split(':',1)[1]
+                            for prj in projects:
+                                if name in patterns_prefetch[prj]:
+                                    ret.update(self.expandPatterns({name : prj}, depth - 1, projects, patterns_prefetch, keep_patterns))
+                            if not keep_patterns:
+                                continue
+                        rpmpgks.append(name)
 
                 ret[pattern].update({element: rpmpgks})
 

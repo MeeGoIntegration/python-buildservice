@@ -1086,13 +1086,13 @@ class BuildService():
         return core.meta_get_filelist(self.apiurl, project, pkg,
                                           expand=True, revision=revision)
 
-    def getFile(self, project, pkg, filename, revision=None):
+    def getFile(self, project, pkg, filename, revision=None, expand=1):
         data = ""
         if not revision:
             revision = self.getPackageRev(project, pkg)
 
         u = core.makeurl(self.apiurl, ['source', project, pkg, quote(filename)],
-                             query={"rev":revision, "expand":1})
+                             query={"rev":revision, "expand":expand})
         for chunks in core.streamfile(u):
             data += chunks
         return data

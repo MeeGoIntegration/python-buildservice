@@ -1075,7 +1075,7 @@ class BuildService():
                 "pkgdep")
 
     def getPackageRev(self, project, pkg):
-        xml = core.show_files_meta(self.apiurl, project, pkg, expand=True)
+        xml = core.show_files_meta(self.apiurl, project, pkg, expand=False)
         tree =  ElementTree.fromstring(''.join(xml))
         return tree.get("rev")
 

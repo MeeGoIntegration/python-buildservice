@@ -23,6 +23,7 @@ import tempfile
 import time
 import urlparse
 import urllib2
+import cgi
 import xml.etree.cElementTree as ElementTree
 from urllib2 import HTTPError
 from osc import conf, core
@@ -34,19 +35,15 @@ prj_template = """\
   <title>%(title)s</title>
   <description>%(description)s</description>
 
-  <person role="maintainer" userid="%(user)s" />
-  <person role="bugowner" userid="%(user)s" />
-
+  %(maintainers)s
   %(link)s
-  %(build)s
-  %(publish)s
-
+  %(flags)s
 %(repositories)s
 
 </project>
 """
 
-repo_template = """  <repository name="%(repository)s" %(mechanism)s">
+repo_template = """  <repository name="%(repository)s" %(mechanism)s block="%(block)s">
 %(paths)s
 %(archs)s
   </repository>\n"""
@@ -211,6 +208,7 @@ class BuildService():
                                    src_package = item['src_package'],
                                    tgt_project = item['tgt_project'],
                                    tgt_package = item['tgt_package'],
+                                   src_rev = core.show_upstream_rev(self.apiurl, item['src_project'], item['src_package']),
                                    **kwargs)
 
                 if supersede == True:
@@ -1079,6 +1077,15 @@ class BuildService():
         tree =  ElementTree.fromstring(''.join(xml))
         return tree.get("rev")
 
+    def getServiceState(self, project, pkg):
+        xml = core.show_files_meta(self.apiurl, project, pkg, expand=True)
+        tree =  ElementTree.fromstring(''.join(xml))
+        status = "succeeded"
+        for node in tree.findall("serviceinfo"):
+            status = node.get("code")
+            break
+        return status
+
     def getPackageFileList(self, project, pkg, revision=None):
         if not revision:
             revision = self.getPackageRev(project, pkg)
@@ -1202,50 +1209,85 @@ class BuildService():
         return repo_results
 
     # for backward comapt
-    def createProjectLink(self, link_source, repolinks, link_target):
-        return self.createProject(link_target, repolinks, link=link_source)
+    def createProjectLink(self, link_source, repolinks, link_target, flags=[]):
+        return self.createProject(link_target, repolinks, links=[link_source], flags=flags)
 
-    def createProject(self, name, repos, link=None, paths=None, build=True,
-                      publish=True, mechanism="localdep"):
+    def createProject(self, name, repos, links=None, paths=None, build=True,
+                      publish=True, mechanism="localdep", flags=[], maintainers=None,
+                      desc="", title="", block="all"):
         repositories = ""
         for repo, archs in repos.iteritems():
             arch_string = ""
             for arch in archs:
                 arch_string += "    <arch>%s</arch>" % arch
-            paths_string = ""
+            paths_string = []
             if paths and repo in paths:
                 for path in paths[repo]:
-                    paths_string += '    <path project="%s" repository="%s"/>\n' % path
+                    if path[2] in archs:
+                        paths_string.append('<path project="%s" repository="%s"/>' % (path[0], path[1]))
             mechanism_string=""
-            if link:
-                paths_string += '    <path project="%s" repository="%s"/>\n' % (link, repo)
+            if links:
+                for link in links:
+                    link_path_string = '<path project="%s" repository="%s"/>' % (link, repo)
+                    if not link_path_string in paths_string:
+                        paths_string.insert(0, link_path_string)
+
                 mechanism_string = 'linkedbuild="%s"' % mechanism
             repositories += repo_template % dict(
                 repository=repo,
                 mechanism=mechanism_string,
-                paths=paths_string,
-                archs=arch_string
+                paths="\n".join(paths_string),
+                archs=arch_string,
+                block=block,
                 )
         build_string = ""
-        if not build:
-            build_string = "<build><disable/></build>"
-        publish_string = ""
-        if not publish:
-            publish_string = "<publish><disable/></publish>"
+        #if not build:
+        #    build_string = "<build><disable/></build>"
+        #publish_string = ""
+        #if not publish:
+        #    publish_string = "<publish><disable/></publish>"
         link_string = ""
-        if link:
-            link_string = '<link project="%s"/>' % link
+        if links:
+            for link in links:
+                link_string += '<link project="%s"/>\n' % link
+
+        from lxml import etree
+        flags_list = []
+        if flags:
+            for flag in flags:
+                if flag.tag == "build" and not build:
+                    etree.SubElement(flag, "disable")
+                if flag.tag == "publish" and not publish:
+                    etree.SubElement(flag, "disable")
+                flags_list.append(etree.tostring(flag))
+            
+        flags_string = "\n".join(flags_list)
+
+        maint_string = ""
+        if maintainers:
+            for maint in maintainers:
+                maint_string +='<person role="maintainer" userid="%s" />\n' % maint
+
+        if title:
+            title = cgi.escape(title)
+        if desc:
+            desc = cgi.escape(desc)
+
         meta = prj_template % dict(
             name=name,
             user=self.getUserName(),
-            title=name,
-            description="",
+            title=title or name,
+            description=desc,
             link=link_string,
-            build=build_string,
-            publish=publish_string,
+            #build=build_string,
+            #publish=publish_string,
             repositories=repositories,
+            flags=flags_string,
+            maintainers=maint_string,
             )
         u = core.makeurl(self.apiurl, ['source', name, '_meta'])
+
+        print meta.encode('utf-8')
         f = core.http_PUT(u, data=meta)
         root = ElementTree.parse(f).getroot()
         ret = root.get('code')

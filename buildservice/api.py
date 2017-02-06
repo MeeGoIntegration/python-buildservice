@@ -1304,16 +1304,21 @@ class BuildService():
         xml = ElementTree.parse(f).getroot()
         return attribute in [child.get('name') for child in xml.getchildren()]
 
-    def createProjectAttribute(self, project, attribute):
-        u = core.makeurl(self.apiurl, ['source',
-                                       project,
-                                       '_attribute'])
+    def createProjectAttribute(self, project, attribute, package=None, namespace="OBS", values=None):
+        url = ['source', project]
+        if package: url.append(package)
+        url.append("_attribute")
+        u = core.makeurl(self.apiurl, url)
+
+        values_xml = ""
+        if values:
+            for value in values:
+                values_xml += "<value>%s</value>\n" % value
+            values_xml.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
         xml = """
-        <attributes>
-        <attribute namespace='OBS' name='%s'>
-        </attribute>
-        </attributes>
-        """%attribute
+        <attributes><attribute namespace='%s' name='%s'>%s</attribute></attributes>
+        """ % (namespace, attribute, values_xml)
+        print xml
         f = core.http_POST(u, data=xml)
         root = ElementTree.parse(f).getroot()
         ret = root.get('code')

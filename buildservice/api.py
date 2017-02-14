@@ -1098,8 +1098,16 @@ class BuildService():
         if not revision:
             revision = self.getPackageRev(project, pkg)
 
+        q = {"expand":expand}
+
+        if revision:
+            q["rev"]=revision
+
         u = core.makeurl(self.apiurl, ['source', project, pkg, quote(filename)],
-                             query={"rev":revision, "expand":expand})
+                             query=q)
+        if not revision: # There is going to be no revision but OBS returns misleading 400
+            raise HTTPError(u, 404, "No revision found so no file has been created", None, None)
+
         for chunks in core.streamfile(u):
             data += chunks
         return data

@@ -557,6 +557,12 @@ class BuildService():
         Returns a list of binaries for a particular target and package
         """
         (repo, arch) = target.split('/')
+        if isinstance(project, unicode):
+            project = project.encode('utf8')
+        if isinstance(target, unicode):
+            target = target.encode('utf8')
+        if isinstance(package, unicode):
+            package = package.encode('utf8')
         return core.get_binarylist(self.apiurl, project, repo, arch, package)
 
     def getBinary(self, project, target, package, file, path):

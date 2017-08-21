@@ -48,6 +48,33 @@ repo_template = """  <repository name="%(repository)s" %(mechanism)s block="%(bl
 %(archs)s
   </repository>\n"""
 
+# The API for buildservice takes str arguments
+#
+# Sometimes unicode is passed in so this decorator ensures that thos
+# args are encoded to utf8.
+# The decorator arg list is a list of either str or None.
+# The following example would not touch self but would utf8 encode
+# project, target and package if they were passed as unicode:
+# @coerce_to_utf8(None, str, str, str)
+# def getBinaryList(self, project, target, package):
+
+def coerce_to_utf8(*types):
+    def decorator(f):
+        def new_f(*args, **kwds):
+            newargs = []
+            if len(args) > len(types):
+                raise Exception("More arguments passed than type enforcers in the coerce_to_utf8 decorator")
+            for (a, t) in zip(args, types):
+                if t is str:
+                    if isinstance(a, unicode):
+                        a = a.encode('utf8')
+                elif t is not None:
+                    raise Exception("Only unicode/None allowed in the coerce_to_utf8 decorator")
+                newargs.append( a )
+            return f(*newargs, **kwds)
+        return new_f
+    return decorator
+
 def flag2bool(flag):
     """
     flag2bool(flag) -> Boolean
@@ -146,6 +173,7 @@ class BuildService():
     def gen_req_info(self, reqid, show_detail = True):
         return self.genRequestInfo(reqid, show_detail)
 
+    @coerce_to_utf8(None, str, str)
     def isNewPackage(self, dst_project, dst_package):
         # Check whether the dst pac is a new one
         new_pkg = False
@@ -412,6 +440,7 @@ class BuildService():
             projects.append(homeproject)
         return projects
 
+    @coerce_to_utf8(None, str)
     def watchProject(self, project):
         """
         watchProject(project)
@@ -431,6 +460,7 @@ class BuildService():
         f = metafile(url, ElementTree.tostring(person))
         f.sync()
 
+    @coerce_to_utf8(None, str)
     def unwatchProject(self, project):
         """
         watchProject(project)
@@ -550,6 +580,7 @@ class BuildService():
         root = ElementTree.parse(f).getroot()
         return [ node.get('name') for node in root.findall('entry') ]
 
+    @coerce_to_utf8(None, str, str, str)
     def getBinaryList(self, project, target, package):
         """
         getBinaryList(project, target, package) -> list
@@ -559,6 +590,7 @@ class BuildService():
         (repo, arch) = target.split('/')
         return core.get_binarylist(self.apiurl, project, repo, arch, package)
 
+    @coerce_to_utf8(None, str, str, str, str, str)
     def getBinary(self, project, target, package, file, path):
         """
         getBinary(project, target, file, path)
@@ -568,6 +600,7 @@ class BuildService():
         (repo, arch) = target.split('/')
         core.get_binary_file(self.apiurl, project, repo, arch, file, target_filename=path, package=package)
 
+    @coerce_to_utf8(None, str, str, str, str)
     def getBinaryInfo(self, project, target, package, binary, ext=False):
         """
         getBinaryInfo(project, target, package, binary, ext=False)
@@ -677,11 +710,11 @@ class BuildService():
                 continue
             if end_time and state.get('when') >= end_time:
                 continue
-            
+
             for action in req.findall('action'):
                 if action.get('type') != "submit":
                     continue
-               
+
                 d = {'id': int(req.get('id'))}
                 src = action.find('source')
                 d['srcproject'] = src.get('project')
@@ -691,9 +724,9 @@ class BuildService():
                 d['dstpackage'] = dest.get('package')
                 d['state'] = state.get('name')
                 d['when'] = state.get('when')
-                
+
                 submitrequests.append(d)
-                
+
         submitrequests.sort(key=lambda x: x['id'])
 
 	return submitrequests
@@ -794,7 +827,7 @@ class BuildService():
     def getProjectData(self, project, tag):
         """
         getProjectData(project, tag) -> list
-        
+
         Return a string list if node has text, else return the values dict list
         """
         data = []
@@ -816,7 +849,7 @@ class BuildService():
     def getProjectPersons(self, project, role):
         """
         getProjectPersons(project, role) -> list
-        
+
         Return a userid list in this project with this role
         """
         userids = []
@@ -843,14 +876,14 @@ class BuildService():
     def deleteProject(self, project):
         """
         deleteProject(project)
-        
+
         Delete the specific project
         """
         try:
             core.delete_project(self.apiurl, project)
         except Exception:
             return False
-            
+
         return True
 
     def getPackageMeta(self, project, package):
@@ -864,7 +897,7 @@ class BuildService():
     def getPackageData(self, project, package, tag):
         """
         getPackageData(project, package, tag) -> list
-        
+
         Return a string list if node has text, else return the values dict list
         """
         data = []
@@ -886,7 +919,7 @@ class BuildService():
     def getPackagePersons(self, project, package, role):
         """
         getPackagePersons(project, package, role) -> list
-        
+
         Return a userid list in the package with this role
         """
         userids = []
@@ -900,7 +933,7 @@ class BuildService():
     def getPackageDevel(self, project, package):
         """
         getPackageDevel(project, package) -> tuple (devel_prj, devel_pkg)
-        
+
         Return the devel tuple of a package if it has the node, else return None
         """
         devels = self.getPackageData(project, package, 'devel')
@@ -913,14 +946,14 @@ class BuildService():
     def deletePackage(self, project, package):
         """
         deletePackage(project, package)
-        
+
         Delete the specific package in project
         """
         try:
             core.delete_package(self.apiurl, project, package)
         except Exception:
             return False
-            
+
         return True
 
     def projectFlags(self, project):
@@ -979,7 +1012,7 @@ class BuildService():
             query['rev'] = rev
         else:
             query['rev'] = 'latest'
-    
+
         u = core.makeurl(self.apiurl, ['source', project, package], query=query)
         f = core.http_GET(u)
         root = ElementTree.parse(f).getroot()
@@ -1046,7 +1079,7 @@ class BuildService():
         return archs
 
     def isPackageSucceeded(self, project, repository, pkg, arch):
-        results = core.get_package_results(self.apiurl, project, pkg, 
+        results = core.get_package_results(self.apiurl, project, pkg,
                                            repository = [repository],
                                            arch=[arch])
         for result in results:
@@ -1056,7 +1089,7 @@ class BuildService():
 
     def getPackageDepends(self, project, repository, pkg, arch, query):
         p = []
-        xml = core.get_dependson(self.apiurl, project, repository, arch, 
+        xml = core.get_dependson(self.apiurl, project, repository, arch,
                                  packages=[pkg], reverse=True)
         tree =  ElementTree.fromstring(''.join(xml))
         for package in tree.findall('package'):
@@ -1268,7 +1301,7 @@ class BuildService():
                 if flag.tag == "publish" and not publish:
                     etree.SubElement(flag, "disable")
                 flags_list.append(etree.tostring(flag))
-            
+
         flags_string = "\n".join(flags_list)
 
         maint_string = ""
@@ -1466,7 +1499,7 @@ class BuildService():
         response = core.http_GET(url)
         root = ElementTree.parse(response).getroot()
         return [ node.get('name') for node in root.findall('entry') ]
-        
+
     def setProjectPattern(self, project, pattern, name=None):
         with open(pattern) as body:
             if not name:
@@ -1544,7 +1577,7 @@ class BuildService():
                 ret[pattern].update({element: rpmpgks})
 
         return ret
-        
+
     def getGroupUsers(self, group):
         u = core.makeurl(self.apiurl, ["group", group])
         try:
@@ -1691,4 +1724,3 @@ class ProjectFlags(object):
                     flagnode.append(rulenode)
 
         print ElementTree.tostring(self.tree)
-

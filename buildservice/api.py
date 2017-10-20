@@ -1078,8 +1078,19 @@ class BuildService():
         return tree.get("rev")
 
     def getServiceState(self, project, pkg):
-        xml = core.show_files_meta(self.apiurl, project, pkg, expand=True)
-        tree =  ElementTree.fromstring(''.join(xml))
+        try:
+            xml = core.show_files_meta(self.apiurl, project, pkg, expand=True)
+        except HTTPError as e:
+            # Check the known reasons in 400 response
+            if e.code == 400:
+                if 'service in progress' in e.reason:
+                    return 'running'
+                else:
+                    return e.reason
+            # Raise other errors
+            raise
+
+        tree = ElementTree.fromstring(''.join(xml))
         status = "succeeded"
         for node in tree.findall("serviceinfo"):
             status = node.get("code")

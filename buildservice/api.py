@@ -19,9 +19,9 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 import os
+import re
 import tempfile
 import time
-import urlparse
 import urllib2
 import cgi
 import xml.etree.cElementTree as ElementTree
@@ -972,16 +972,22 @@ class BuildService():
         """
         getPackageChecksum(self, project, package, rev=None) -> string
 
-        returns source md5 of a package
+        returns source md5 of a package or None if it can't be determined atm
         """
         query = { 'expand' : 1 }
         if rev:
             query['rev'] = rev
         else:
             query['rev'] = 'latest'
-    
+
         u = core.makeurl(self.apiurl, ['source', project, package], query=query)
-        f = core.http_GET(u)
+        try:
+            f = core.http_GET(u)
+        except HTTPError as e:
+            if e.code == 400 and re.match('service .+ failed', e.reason):
+                return None
+            else:
+                raise
         root = ElementTree.parse(f).getroot()
         return root.get("srcmd5")
 

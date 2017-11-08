@@ -1159,8 +1159,15 @@ class BuildService():
         by_type = "by_%s" % reviewer_type
         query = {'cmd': 'addreview', by_type : reviewer }
         u = core.makeurl(self.apiurl, ['request', rid], query=query)
-        f = core.http_POST(u, data=msg)
-        root = ElementTree.parse(f).getroot()
+        try:
+            f = core.http_POST(u, data=msg)
+            root = ElementTree.parse(f).getroot()
+        except HTTPError as e:
+            if e.code == 400:
+                root = ElementTree.parse(e).getroot()
+            else:
+                raise
+
         ret = root.get('code')
         if ret == "ok":
             return True

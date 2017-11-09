@@ -19,9 +19,9 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 import os
+import re
 import tempfile
 import time
-import urlparse
 import urllib2
 import cgi
 import xml.etree.cElementTree as ElementTree
@@ -972,16 +972,22 @@ class BuildService():
         """
         getPackageChecksum(self, project, package, rev=None) -> string
 
-        returns source md5 of a package
+        returns source md5 of a package or None if it can't be determined atm
         """
         query = { 'expand' : 1 }
         if rev:
             query['rev'] = rev
         else:
             query['rev'] = 'latest'
-    
+
         u = core.makeurl(self.apiurl, ['source', project, package], query=query)
-        f = core.http_GET(u)
+        try:
+            f = core.http_GET(u)
+        except HTTPError as e:
+            if e.code == 400 and re.match('service .+ failed', e.reason):
+                return None
+            else:
+                raise
         root = ElementTree.parse(f).getroot()
         return root.get("srcmd5")
 
@@ -1078,8 +1084,19 @@ class BuildService():
         return tree.get("rev")
 
     def getServiceState(self, project, pkg):
-        xml = core.show_files_meta(self.apiurl, project, pkg, expand=True)
-        tree =  ElementTree.fromstring(''.join(xml))
+        try:
+            xml = core.show_files_meta(self.apiurl, project, pkg, expand=True)
+        except HTTPError as e:
+            # Check the known reasons in 400 response
+            if e.code == 400:
+                if 'service in progress' in e.reason:
+                    return 'running'
+                else:
+                    return e.reason
+            # Raise other errors
+            raise
+
+        tree = ElementTree.fromstring(''.join(xml))
         status = "succeeded"
         for node in tree.findall("serviceinfo"):
             status = node.get("code")
@@ -1142,8 +1159,15 @@ class BuildService():
         by_type = "by_%s" % reviewer_type
         query = {'cmd': 'addreview', by_type : reviewer }
         u = core.makeurl(self.apiurl, ['request', rid], query=query)
-        f = core.http_POST(u, data=msg)
-        root = ElementTree.parse(f).getroot()
+        try:
+            f = core.http_POST(u, data=msg)
+            root = ElementTree.parse(f).getroot()
+        except HTTPError as e:
+            if e.code == 400:
+                root = ElementTree.parse(e).getroot()
+            else:
+                raise
+
         ret = root.get('code')
         if ret == "ok":
             return True

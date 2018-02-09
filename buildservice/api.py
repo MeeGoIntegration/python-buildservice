@@ -48,6 +48,9 @@ repo_template = """  <repository name="%(repository)s" %(mechanism)s block="%(bl
 %(archs)s
   </repository>\n"""
 
+path_template = '<path project="%(project)s" repository="%(repository)s"/>'
+
+
 def flag2bool(flag):
     """
     flag2bool(flag) -> Boolean
@@ -1252,23 +1255,30 @@ class BuildService():
             arch_string = ""
             for arch in archs:
                 arch_string += "    <arch>%s</arch>" % arch
-            paths_string = []
+            path_elements = []
             if paths and repo in paths:
                 for path in paths[repo]:
-                    if path[2] in archs:
-                        paths_string.append('<path project="%s" repository="%s"/>' % (path[0], path[1]))
-            mechanism_string=""
+                    path_string = path_template % dict(
+                        project=path[0],
+                        repository=path[1],
+                    )
+                    if path[2] in archs and path_string not in path_elements:
+                        path_elements.append(path_string)
+            mechanism_string = ""
             if links:
                 for link in links:
-                    link_path_string = '<path project="%s" repository="%s"/>' % (link, repo)
-                    if not link_path_string in paths_string:
-                        paths_string.insert(0, link_path_string)
+                    link_path_string = path_template % dict(
+                        project=link,
+                        repository=repo,
+                    )
+                    if link_path_string not in path_elements:
+                        path_elements.insert(0, link_path_string)
 
                 mechanism_string = 'linkedbuild="%s"' % mechanism
             repositories += repo_template % dict(
                 repository=repo,
                 mechanism=mechanism_string,
-                paths="\n".join(paths_string),
+                paths="\n".join(path_elements),
                 archs=arch_string,
                 block=block,
                 )

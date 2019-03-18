@@ -1,11 +1,8 @@
 #!/usr/bin/python
 
-from pprint import pprint
+import settings
 
-from buildservice import BuildService
-bs = BuildService(apiurl='http://api.meego.com', oscrc='/etc/boss/oscrc' )
-
-print 'Bugowners of Trunk'
-pprint(bs.getProjectPersons('Trunk', 'bugowner'))
-print 'Maintainers of Trunk:'
-pprint(bs.getProjectPersons('Trunk', 'maintainers'))
+print 'Bugowners of '+settings.testprj2
+print(settings.bs.getProjectPersons(settings.testprj2, 'bugowner'))
+print 'Maintainers of '+settings.testprj
+print(settings.bs.getProjectPersons(settings.testprj, 'maintainer'))

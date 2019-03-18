@@ -1,17 +1,24 @@
 #!/usr/bin/python
 
-from buildservice import BuildService
+import settings
 from osc import conf, core
-bs = BuildService(apiurl = 'https://api.meego.com', oscrc = "/etc/oscrc")
-#print bs.getRepoState('Trunk')
-#print bs.getProjectDiff('Trunk:Testing', 'Trunk')
+import urllib2
+import random
 
-packages = bs.getPackageList('Trunk:Testing')
+print "Diffing 10 random packages from "+settings.testprj+" and "+settings.testprj2
+packages = random.sample(settings.bs.getPackageList(settings.testprj),10)
 for src_package in packages:
-  print src_package
-  diff = core.server_diff(bs.apiurl,
-                      'Trunk', src_package, None,
-                      'Trunk:Testing', src_package, None, False)
-  p = open(src_package, 'w')
-  p.write(diff)
-  p.close()
+  print "Checking "+src_package
+  try:
+    diff = core.server_diff(settings.bs.apiurl,
+                      settings.testprj, src_package, None,
+                      settings.testprj2, src_package, None, False)
+    if not diff:
+      print "No difference"
+    else:
+      print diff
+  except urllib2.HTTPError as err:
+   if err.code == 404:
+     print "No "+src_package+" in "+settings.testprj2
+   else:
+     raise

@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
-from buildservice import BuildService
-bs = BuildService(apiurl='http://api.meego.com', oscrc='/etc/boss/oscrc' )
-print bs.getRepoState('Trunk')
+import settings
+from pprint import pprint
+
+print "Repository state of "+settings.testprj
+pprint(settings.bs.getRepoState(settings.testprj))

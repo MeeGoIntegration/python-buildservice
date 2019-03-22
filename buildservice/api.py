@@ -1109,9 +1109,16 @@ class BuildService():
     def getPackageFileList(self, project, pkg, revision=None):
         if not revision:
             revision = self.getPackageRev(project, pkg)
-
-        return core.meta_get_filelist(self.apiurl, project, pkg,
-                                          expand=True, revision=revision)
+        try:
+            return core.meta_get_filelist(
+                self.apiurl, project, pkg, revision=revision, expand=True)
+        except HTTPError as err:
+            if err.code != 400:
+                raise
+        # Expand returned 400 which probably means the service has failed
+        # Lets see if we get anything without expand
+        return core.meta_get_filelist(
+            self.apiurl, project, pkg, revision=revision, expand=False)
 
     def getFile(self, project, pkg, filename, revision=None, expand=1):
         data = ""

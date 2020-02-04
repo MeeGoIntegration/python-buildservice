@@ -4,16 +4,15 @@ Version:    0.5.0
 Release:    1
 Group:      Development/Languages/Python
 License:    GPL-2.0-or-later
-BuildArch:  noarch
 URL:        https://github.com/MeeGoIntegration/python-buildservice
 Source0:    %{name}-%{version}.tar.gz
-Requires:   python >= 2.5
-Requires:   osc
-BuildRequires:  python, python-sphinx, osc, python-distribute
-BuildRoot:  %{_tmppath}/%{name}-%{version}-build
 
-%{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
+BuildRequires: python-rpm-macros
+BuildRequires: python-setuptools
+BuildRequires: fdupes
+BuildArch:  noarch
 
+Requires: osc
 
 %description
 Python module to access OBS server, works as a convinience wrapper around osc.
@@ -23,18 +22,12 @@ Python module to access OBS server, works as a convinience wrapper around osc.
 echo "%{version}" > VERSION
 
 %build
-%{__python} setup.py build
-%{__python} setup.py build_sphinx
+%python2_build
 
 %install
-rm -rf $RPM_BUILD_ROOT
-%if 0%{?suse_version}
-%{__python} setup.py install --root=$RPM_BUILD_ROOT --prefix=%{_prefix}
-%else
-%{__python} setup.py install --root=$RPM_BUILD_ROOT -O1
-%endif
+%python2_install
+%fdupes %{buildroot}%{$python_sitelib}
 
 %files
 %defattr(-,root,root,-)
 %{python_sitelib}/*
-

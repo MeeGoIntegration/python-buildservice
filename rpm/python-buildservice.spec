@@ -19,8 +19,8 @@ BuildRoot:  %{_tmppath}/%{name}-%{version}-build
 Python module to access OBS server, works as a convinience wrapper around osc.
 
 %prep
-%setup -q -n %{name}-%{version}
-
+%setup -q
+echo "%{version}" > VERSION
 
 %build
 %{__python} setup.py build

@@ -1,13 +1,14 @@
 #!/usr/bin/python2
-from distutils.core import setup
-import os, sys
-from setuptools import find_packages
+from setuptools import setup
 
-setup(name = 'buildservice',
-      version = '0.3',
-      description = 'Module to access OBS server',
-      author = 'Anas Nashif',
-      author_email = 'anas.nashif@intel.com',
-      url = 'http://meego.gitorious.org/meego-infrastructure-tools/python-buildservice',
-      packages = ['buildservice'],
+version = open('VERSION').read().strip()
+
+setup(
+    name='buildservice',
+    version=version,
+    description='Module to access OBS server',
+    url='https://github.com/MeeGoIntegration/python-buildservice',
+    packages=['buildservice'],
+    install_requires=['osc<0.140'],
+    python_requires='>=2.7,<3.0',
 )

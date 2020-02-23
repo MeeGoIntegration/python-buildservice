@@ -1,0 +1,4 @@
+*.pyc
+buildservice.egg-info
+build
+doc/build

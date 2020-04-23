@@ -12,7 +12,8 @@ BuildRequires: python-setuptools
 BuildRequires: fdupes
 BuildArch:  noarch
 
-Requires: osc
+# Force 0.165 as this is python2.7 version
+Requires:   osc == 0.165.4
 
 %description
 Python module to access OBS server, works as a convinience wrapper around osc.

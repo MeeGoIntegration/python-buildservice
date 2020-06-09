@@ -201,8 +201,9 @@ class BuildService():
 
         supsersedereqs = []
         for item in options_list:
-            if item['action'] == "submit":
-                request.add_action(item['action'],
+            action = item['action']
+            if action == "submit":
+                request.add_action(action,
                                    src_project=item['src_project'],
                                    src_package=item['src_package'],
                                    tgt_project=item['tgt_project'],
@@ -220,24 +221,24 @@ class BuildService():
                             item['tgt_package'], req_type='submit',
                             req_state=['new', 'review', 'declined']))
 
-            elif item['action'] == "add_role":
-                request.add_action(item['action'],
+            elif action == "add_role":
+                request.add_action(action,
                                    tgt_project=item['tgt_project'],
                                    tgt_package=item['tgt_package'],
                                    person_name=item['person_name'],
                                    person_role=item['person_role'],
                                    group_name=item['group_name'],
                                    group_role=item['group_role'])
-            elif item['action'] == "maintenance_release":
-                request.add_action(item['action'],
+            elif action == "maintenance_release":
+                request.add_action(action,
                                    src_project=item['src_project'],
                                    src_package=item['src_package'],
                                    src_rev=item['src_rev'],
                                    tgt_project=item['tgt_project'],
                                    tgt_package=item['tgt_package'])
-            elif item['action'] == "maintenance_incident":
+            elif action == "maintenance_incident":
                 request.add_action(
-                    item['action'],
+                    action,
                     src_project=item['src_project'],
                     src_package=item['src_package'],
                     src_rev=item['src_rev'],
@@ -245,8 +246,8 @@ class BuildService():
                     tgt_releaseproject=item['tgt_releaseproject'],
                     person_name=item['person_name'],
                     **kwargs)
-            elif item['action'] == "delete":
-                request.add_action(item['action'],
+            elif action == "delete":
+                request.add_action(action,
                                    tgt_project=item['tgt_project'],
                                    tgt_package=item['tgt_package'])
 
@@ -258,8 +259,8 @@ class BuildService():
                             item['tgt_package'], req_type='delete',
                             req_state=['new', 'review', 'declined']))
 
-            elif item['action'] == "change_devel":
-                request.add_action(item['action'],
+            elif action == "change_devel":
+                request.add_action(action,
                                    src_project=item['src_project'],
                                    src_package=item['src_package'],
                                    tgt_project=item['tgt_project'],

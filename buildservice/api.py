@@ -25,7 +25,7 @@ import time
 import cgi
 import xml.etree.cElementTree as ElementTree
 from urllib.error import HTTPError
-from osc import conf, core
+import osc
 from urllib.parse import quote, quote_plus
 
 prj_template = """\
@@ -61,15 +61,16 @@ def flag2bool(flag):
     elif flag == 'disable':
         return False
 
+
 def bool2flag(b):
     """
     bool2flag(b) -> String
 
     Returns 'enable', or 'disable' according to boolean value b
     """
-    if b == True:
+    if b is True:
         return 'enable'
-    elif b == False:
+    elif b is False:
         return 'disable'
 
 
@@ -83,25 +84,27 @@ class metafile:
         self.url = url
         self.change_is_required = change_is_required
 
-        (fd, self.filename) = tempfile.mkstemp(prefix = 'osc_metafile.', suffix = file_ext, dir = '/tmp')
+        (fd, self.filename) = tempfile.mkstemp(prefix='osc_metafile.',
+                                               suffix=file_ext, dir='/tmp')
 
         f = os.fdopen(fd, 'w')
         f.write(''.join(input))
         f.close()
 
-        self.hash_orig = core.dgst(self.filename)
+        self.hash_orig = osc.core.dgst(self.filename)
 
     def sync(self):
-        hash = core.dgst(self.filename)
-        if self.change_is_required == True and hash == self.hash_orig:
+        hash = osc.core.dgst(self.filename)
+        if self.change_is_required is True and hash == self.hash_orig:
             os.unlink(self.filename)
             return True
 
-        # don't do any exception handling... it's up to the caller what to do in case
-        # of an exception
-        core.http_PUT(self.url, file=self.filename)
+        # don't do any exception handling... it's up to the caller
+        # what to do in case of an exception
+        osc.core.http_PUT(self.url, file=self.filename)
         os.unlink(self.filename)
         return True
+
 
 class BuildService():
     "Interface to Build Service API"
@@ -109,28 +112,29 @@ class BuildService():
 
         try:
             if oscrc:
-                conf.get_config(override_conffile = oscrc)
+                osc.conf.get_config(override_conffile=oscrc)
             else:
-                conf.get_config()
+                osc.conf.get_config()
 
         except OSError as e:
             if e.errno == 1:
                 # permission problem, should be the chmod(0600) issue
-                raise RuntimeError('Current user has no write permission for specified oscrc: %s' % oscrc)
+                raise RuntimeError('Current user has no write permission for '
+                                   'specified oscrc: %s' % oscrc)
 
-            raise # else
+            raise  # else
 
         if apiurl:
-            self.apiurl = conf.config['apiurl_aliases'].get(apiurl, apiurl)
+            self.apiurl = osc.conf.config['apiurl_aliases'].get(apiurl, apiurl)
         else:
-            self.apiurl = conf.config['apiurl']
+            self.apiurl = osc.conf.config['apiurl']
 
         if not self.apiurl:
             raise RuntimeError('No apiurl "%s" found in %s' % (apiurl, oscrc))
 
         # Add a couple of method aliases
-        self.copyPackage = core.copy_pac
-        self.addPerson   = core.addPerson
+        self.copyPackage = osc.core.copy_pac
+        self.addPerson = osc.core.addPerson
 
     def getAPIServerList(self):
         """getAPIServerList() -> list
@@ -138,24 +142,26 @@ class BuildService():
         Get list of API servers configured in .oscrc
         """
         apiservers = []
-        for host in conf.config['api_host_options'].keys():
-            apiurl = "%s://%s" % (conf.config['scheme'], host)
+        for host in osc.conf.config['api_host_options'].keys():
+            apiurl = "%s://%s" % (osc.conf.config['scheme'], host)
         return apiservers
 
     # the following two alias api are added temporarily for compatible safe
     def is_new_package(self, dst_project, dst_package):
         return self.isNewPackage(dst_project, dst_package)
-    def gen_req_info(self, reqid, show_detail = True):
+
+    def gen_req_info(self, reqid, show_detail=True):
         return self.genRequestInfo(reqid, show_detail)
 
     def isNewPackage(self, dst_project, dst_package):
         # Check whether the dst pac is a new one
         new_pkg = False
         try:
-            core.meta_exists(metatype = 'pkg',
-                        path_args = (core.quote_plus(dst_project), core.quote_plus(dst_package)),
-                        create_new = False,
-                        apiurl = self.apiurl)
+            osc.core.meta_exists(metatype='pkg',
+                                 path_args=(osc.core.quote_plus(dst_project),
+                                            osc.core.quote_plus(dst_package)),
+                                 create_new=False,
+                                 apiurl=self.apiurl)
         except HTTPError as e:
             if e.code == 404:
                 new_pkg = True
@@ -163,7 +169,8 @@ class BuildService():
                 raise e
         return new_pkg
 
-    def createRequest(self, options_list, description, comment, supersede = False, **kwargs):
+    def createRequest(self, options_list, description, comment,
+                      supersede=False, **kwargs):
         """ creates a request
 
         options_list = a list of dicts, the valid keys in the dict depends
@@ -198,106 +205,119 @@ class BuildService():
         state.set("name", "new")
         state.append(commentElement)
 
-        request = core.Request()
+        request = osc.core.Request()
         request.description = description
-        request.state = core.RequestState(state)
+        request.state = osc.core.RequestState(state)
 
         supsersedereqs = []
         for item in options_list:
             if item['action'] == "submit":
                 request.add_action(item['action'],
-                                   src_project = item['src_project'],
-                                   src_package = item['src_package'],
-                                   tgt_project = item['tgt_project'],
-                                   tgt_package = item['tgt_package'],
-                                   src_rev = core.show_upstream_rev(self.apiurl, item['src_project'], item['src_package']),
+                                   src_project=item['src_project'],
+                                   src_package=item['src_package'],
+                                   tgt_project=item['tgt_project'],
+                                   tgt_package=item['tgt_package'],
+                                   src_rev=osc.core.show_upstream_rev(
+                                       self.apiurl, item['src_project'],
+                                       item['src_package']),
                                    **kwargs)
 
-                if supersede == True:
-                    supsersedereqs.extend(core.get_exact_request_list(self.apiurl, item['src_project'],
-                                                                      item['tgt_project'], item['src_package'],
-                                                                      item['tgt_package'], req_type='submit',
-                                                                      req_state=['new','review', 'declined']))
+                if supersede is True:
+                    supsersedereqs.extend(
+                        osc.core.get_exact_request_list(
+                            self.apiurl, item['src_project'],
+                            item['tgt_project'], item['src_package'],
+                            item['tgt_package'], req_type='submit',
+                            req_state=['new', 'review', 'declined']))
 
             elif item['action'] == "add_role":
                 request.add_action(item['action'],
-                                   tgt_project = item['tgt_project'],
-                                   tgt_package = item['tgt_package'],
-                                   person_name = item['person_name'],
-                                   person_role = item['person_role'],
-                                   group_name  = item['group_name'],
-                                   group_role  = item['group_role'])
+                                   tgt_project=item['tgt_project'],
+                                   tgt_package=item['tgt_package'],
+                                   person_name=item['person_name'],
+                                   person_role=item['person_role'],
+                                   group_name=item['group_name'],
+                                   group_role=item['group_role'])
             elif item['action'] == "maintenance_release":
                 request.add_action(item['action'],
-                                   src_project = item['src_project'],
-                                   src_package = item['src_package'],
-                                   src_rev     = item['src_rev'],
-                                   tgt_project = item['tgt_project'],
-                                   tgt_package = item['tgt_package'])
+                                   src_project=item['src_project'],
+                                   src_package=item['src_package'],
+                                   src_rev=item['src_rev'],
+                                   tgt_project=item['tgt_project'],
+                                   tgt_package=item['tgt_package'])
             elif item['action'] == "maintenance_incident":
-                request.add_action(item['action'],
-                                   src_project = item['src_project'],
-                                   src_package = item['src_package'],
-                                   src_rev     = item['src_rev'],
-                                   tgt_project = item['tgt_project'],
-                                   tgt_releaseproject
-                                        = item['tgt_releaseproject'],
-                                   person_name = item['person_name'],
-                                   **kwargs)
+                request.add_action(
+                    item['action'],
+                    src_project=item['src_project'],
+                    src_package=item['src_package'],
+                    src_rev=item['src_rev'],
+                    tgt_project=item['tgt_project'],
+                    tgt_releaseproject=item['tgt_releaseproject'],
+                    person_name=item['person_name'],
+                    **kwargs)
             elif item['action'] == "delete":
                 request.add_action(item['action'],
-                                   tgt_project = item['tgt_project'],
-                                   tgt_package = item['tgt_package'])
+                                   tgt_project=item['tgt_project'],
+                                   tgt_package=item['tgt_package'])
 
-                if supersede == True:
-                    supsersedereqs.extend(core.get_exact_request_list(self.apiurl, None,
-                                                                      item['tgt_project'], None,
-                                                                      item['tgt_package'], req_type='delete',
-                                                                      req_state=['new','review', 'declined']))
+                if supersede is True:
+                    supsersedereqs.extend(
+                        osc.core.get_exact_request_list(
+                            self.apiurl, None,
+                            item['tgt_project'], None,
+                            item['tgt_package'], req_type='delete',
+                            req_state=['new', 'review', 'declined']))
 
             elif item['action'] == "change_devel":
                 request.add_action(item['action'],
-                                   src_project = item['src_project'],
-                                   src_package = item['src_package'],
-                                   tgt_project = item['tgt_project'],
-                                   tgt_package = item['tgt_package'])
+                                   src_project=item['src_project'],
+                                   src_package=item['src_package'],
+                                   tgt_project=item['tgt_project'],
+                                   tgt_package=item['tgt_package'])
             else:
                 raise RuntimeError("Unknown Action: %s" % action)
 
         request.create(self.apiurl)
 
-        if supersede == True and len(supsersedereqs) > 0:
+        if supersede is True and len(supsersedereqs) > 0:
             processed = []
             for req in supsersedereqs:
                 if req.reqid not in processed:
                     processed.append(req.reqid)
-                    print("req.reqid: %s - new ID: %s\n"%(req.reqid, request.reqid))
-                    core.change_request_state(self.apiurl, req.reqid,
-                                              'superseded',
-                                              'superseded by %s' % request.reqid,
-                                              request.reqid)
+                    print("req.reqid: %s - new ID: %s\n" %
+                          (req.reqid, request.reqid))
+                    osc.core.change_request_state(
+                        self.apiurl, req.reqid,
+                        'superseded',
+                        'superseded by %s' % request.reqid,
+                        request.reqid)
 
         return request
 
-    def genRequestInfo(self, reqid, show_detail = True):
+    def genRequestInfo(self, reqid, show_detail=True):
         # helper routine to cat remote file
         def get_source_file_content(apiurl, prj, pac, path, rev):
-            revision = core.show_upstream_xsrcmd5(apiurl, prj, pac, revision=rev)
+            revision = osc.core.show_upstream_xsrcmd5(apiurl, prj,
+                                                      pac, revision=rev)
             if revision:
-                query = { 'rev': revision }
+                query = {'rev': revision}
             else:
                 query = None
 
-            u = core.makeurl(apiurl, ['source', prj, pac, core.pathname2url(path)], query=query)
+            u = osc.core.makeurl(apiurl,
+                                 ['source', prj, pac,
+                                  osc.core.pathname2url(path)],
+                                 query=query)
 
             content = ''
-            for buf in core.streamfile(u, core.http_GET, core.BUFSIZE):
+            for buf in osc.core.streamfile(u, osc.core.http_GET,
+                                           osc.core.BUFSIZE):
                 content += buf
 
             # return unicode str
             return content.decode('utf8')
 
-        req = core.get_request(self.apiurl, reqid)
+        req = osc.core.get_request(self.apiurl, reqid)
         try:
             reqinfo = unicode(req)
         except UnicodeEncodeError:
@@ -315,10 +335,11 @@ class BuildService():
         # Check whether the tgt pac is a new one
         new_pkg = False
         try:
-            core.meta_exists(metatype = 'pkg',
-                        path_args = (core.quote_plus(tgt_project), core.quote_plus(tgt_package)),
-                        create_new = False,
-                        apiurl = self.apiurl)
+            osc.core.meta_exists(metatype='pkg',
+                                 path_args=(osc.core.quote_plus(tgt_project),
+                                            osc.core.quote_plus(tgt_package)),
+                                 create_new=False,
+                                 apiurl=self.apiurl)
         except HTTPError as e:
             if e.code == 404:
                 new_pkg = True
@@ -326,7 +347,9 @@ class BuildService():
                 raise e
 
         if new_pkg:
-            src_fl = core.meta_get_filelist(self.apiurl, src_project, src_package, expand=True, revision=src_rev)
+            src_fl = osc.core.meta_get_filelist(
+                self.apiurl, src_project, src_package,
+                expand=True, revision=src_rev)
 
             spec_file = None
             yaml_file = None
@@ -358,9 +381,10 @@ class BuildService():
 
         else:
             try:
-                diff = core.server_diff(self.apiurl,
-                                    tgt_project, tgt_package, None,
-                                    src_project, src_package, src_rev, False)
+                diff = osc.core.server_diff(self.apiurl,
+                                            tgt_project, tgt_package, None,
+                                            src_project, src_package, src_rev,
+                                            False)
 
                 try:
                     reqinfo += diff.decode('utf-8')
@@ -381,21 +405,23 @@ class BuildService():
 
         Get the user data
         """
-        return core.get_user_data(self.apiurl, user, *tags)
+        return osc.core.get_user_data(self.apiurl, user, *tags)
 
     def getUserName(self):
         """getUserName() -> str
 
         Get the user name associated with the current API server
         """
-        return conf.config['api_host_options'][self.apiurl]['user']
+        return osc.conf.config['api_host_options'][self.apiurl]['user']
 
     def getProjectList(self):
         """getProjectList() -> list
 
         Get list of projects
         """
-        return [project for project in core.meta_get_project_list(self.apiurl) if project != 'deleted']
+        return [project for project in
+                osc.core.meta_get_project_list(self.apiurl)
+                if project != 'deleted']
 
     def getWatchedProjectList(self):
         """getWatchedProjectList() -> list
@@ -403,14 +429,16 @@ class BuildService():
         Get list of watched projects
         """
         username = self.getUserName()
-        tree = ElementTree.fromstring(''.join(core.get_user_meta(self.apiurl, username)))
+        tree = ElementTree.fromstring(''.join(osc.core.get_user_meta(
+            self.apiurl, username)))
         projects = []
         watchlist = tree.find('watchlist')
         if watchlist:
             for project in watchlist.findall('project'):
                 projects.append(project.get('name'))
         homeproject = 'home:%s' % username
-        if not homeproject in projects and homeproject in self.getProjectList():
+        if (homeproject not in projects
+                and homeproject in self.getProjectList()):
             projects.append(homeproject)
         return projects
 
@@ -421,8 +449,9 @@ class BuildService():
         Watch project
         """
         username = self.getUserName()
-        data = core.meta_exists('user', username, create_new=False, apiurl=self.apiurl)
-        url = core.make_meta_url('user', username, self.apiurl)
+        data = osc.core.meta_exists('user', username, create_new=False,
+                                    apiurl=self.apiurl)
+        url = osc.core.make_meta_url('user', username, self.apiurl)
 
         person = ElementTree.fromstring(''.join(data))
         watchlist = person.find('watchlist')
@@ -440,8 +469,9 @@ class BuildService():
         Watch project
         """
         username = self.getUserName()
-        data = core.meta_exists('user', username, create_new=False, apiurl=self.apiurl)
-        url = core.make_meta_url('user', username, self.apiurl)
+        data = osc.core.meta_exists('user', username, create_new=False,
+                                    apiurl=self.apiurl)
+        url = osc.core.make_meta_url('user', username, self.apiurl)
 
         person = ElementTree.fromstring(''.join(data))
         watchlist = person.find('watchlist')
@@ -455,7 +485,7 @@ class BuildService():
 
     def getRepoState(self, project):
         targets = {}
-        results = core.show_prj_results_meta(self.apiurl, project)
+        results = osc.core.show_prj_results_meta(self.apiurl, project)
         if not results:
             return {}
         tree = ElementTree.fromstring(''.join(results))
@@ -475,28 +505,30 @@ class BuildService():
 
         Get results of a project. Returns (results, targets)
 
-        results is a dict, with package names as the keys, and lists of result codes as the values
+        results is a dict, with package names as the keys, and lists of result
+        codes as the values
 
         targets is a list of targets, corresponding to the result code lists
         """
-        results = core.show_prj_results_meta(self.apiurl, project)
+        results = osc.core.show_prj_results_meta(self.apiurl, project)
         tree = ElementTree.fromstring(''.join(results))
         results = {}
         targets = []
         for result in tree.findall('result'):
-            targets.append('/'.join((result.get('repository'), result.get('arch'))))
+            targets.append('/'.join((result.get('repository'),
+                                     result.get('arch'))))
             for status in result.findall('status'):
                 package = status.get('package')
                 code = status.get('code')
-                if not package in results:
+                if package not in results:
                     results[package] = []
                 results[package].append(code)
         return (results, targets)
 
     def getDiff(self, sprj, spkg, dprj, dpkg, rev):
         diff = ''
-        diff += core.server_diff(self.apiurl, sprj, spkg, None,
-                 dprj, dpkg, rev, False, True)
+        diff += osc.core.server_diff(self.apiurl, sprj, spkg, None,
+                                     dprj, dpkg, rev, False, True)
         return diff
 
     def getTargets(self, project):
@@ -506,7 +538,8 @@ class BuildService():
         Get a list of targets for a project
         """
         targets = []
-        tree = ElementTree.fromstring(''.join(core.show_project_meta(self.apiurl, project)))
+        tree = ElementTree.fromstring(
+            ''.join(osc.core.show_project_meta(self.apiurl, project)))
         for repo in tree.findall('repository'):
             for arch in repo.findall('arch'):
                 targets.append('%s/%s' % (repo.get('name'), arch.text))
@@ -516,11 +549,12 @@ class BuildService():
         """
         getPackageStatus(project, package) -> dict
 
-        Returns the status of a package as a dict with targets as the keys and status codes as the
-        values
+        Returns the status of a package as a dict with targets as the keys and
+        status codes as the values
         """
         status = {}
-        tree = ElementTree.fromstring(''.join(core.show_results_meta(self.apiurl, project, package)))
+        tree = ElementTree.fromstring(
+            ''.join(osc.core.show_results_meta(self.apiurl, project, package)))
         for result in tree.findall('result'):
             target = '/'.join((result.get('repository'), result.get('arch')))
             statusnode = result.find('status')
@@ -537,20 +571,20 @@ class BuildService():
     def getProjectDiff(self, src_project, dst_project):
         packages = self.getPackageList(src_project)
         for src_package in packages:
-            diff = core.server_diff(self.apiurl,
-                                dst_project, src_package, None,
-                                src_project, src_package, None, False)
+            diff = osc.core.server_diff(self.apiurl,
+                                        dst_project, src_package, None,
+                                        src_project, src_package, None, False)
             print(diff)
 
     def getPackageList(self, prj, deleted=None):
         query = {}
         if deleted:
-           query['deleted'] = 1
+            query['deleted'] = 1
 
-        u = core.makeurl(self.apiurl, ['source', prj], query)
-        f = core.http_GET(u)
+        u = osc.core.makeurl(self.apiurl, ['source', prj], query)
+        f = osc.core.http_GET(u)
         root = ElementTree.parse(f).getroot()
-        return [ node.get('name') for node in root.findall('entry') ]
+        return [node.get('name') for node in root.findall('entry')]
 
     def getBinaryList(self, project, target, package):
         """
@@ -559,7 +593,8 @@ class BuildService():
         Returns a list of binaries for a particular target and package
         """
         (repo, arch) = target.split('/')
-        return core.get_binarylist(self.apiurl, project, repo, arch, package)
+        return osc.core.get_binarylist(self.apiurl, project,
+                                       repo, arch, package)
 
     def getBinary(self, project, target, package, file, path):
         """
@@ -568,7 +603,8 @@ class BuildService():
         Get binary 'file' for 'project' and 'target' and save it as 'path'
         """
         (repo, arch) = target.split('/')
-        core.get_binary_file(self.apiurl, project, repo, arch, file, target_filename=path, package=package)
+        osc.core.get_binary_file(self.apiurl, project, repo, arch, file,
+                                 target_filename=path, package=package)
 
     def getBinaryInfo(self, project, target, package, binary, ext=False):
         """
@@ -582,9 +618,9 @@ class BuildService():
         cmd = "?view=fileinfo"
         if ext:
             cmd += "_ext"
-        u = core.makeurl(self.apiurl, ['build', project, repo, arch,
-                package, binary, cmd])
-        f = core.http_GET(u)
+        u = osc.core.makeurl(self.apiurl, ['build', project, repo, arch,
+                                           package, binary, cmd])
+        f = osc.core.http_GET(u)
         fileinfo = ElementTree.parse(f).getroot()
         result = {"provides": []}
         for node in fileinfo.getchildren():
@@ -600,22 +636,26 @@ class BuildService():
 
         Returns the build log of a package for a particular target.
 
-        If offset is greater than 0, return only text after that offset. This allows live streaming
+        If offset is greater than 0, return only text after that offset.
+        This allows live streaming
         """
         (repo, arch) = target.split('/')
-        u = core.makeurl(self.apiurl, ['build', project, repo, arch, package, '_log?nostream=1&start=%s' % offset])
-        return core.http_GET(u).read()
+        u = osc.core.makeurl(self.apiurl,
+                             ['build', project, repo, arch, package,
+                              '_log?nostream=1&start=%s' % offset])
+        return osc.core.http_GET(u).read()
 
     def getWorkerStatus(self):
         """
         getWorkerStatus() -> list of dicts
 
-        Get worker status as a list of dictionaries. Each dictionary contains the keys 'id',
-        'hostarch', and 'status'. If the worker is building, the dict will additionally contain the
-        keys 'project', 'package', 'target', and 'starttime'
+        Get worker status as a list of dictionaries. Each dictionary
+        contains the keys 'id','hostarch', and 'status'. If the worker
+        is building, the dict will additionally contain the keys
+        'project', 'package', 'target', and 'starttime'
         """
-        url = core.makeurl(self.apiurl, ['build', '_workerstatus'])
-        f = core.http_GET(url)
+        url = osc.core.makeurl(self.apiurl, ['build', '_workerstatus'])
+        f = osc.core.http_GET(url)
         tree = ElementTree.parse(f).getroot()
         workerstatus = []
         for worker in tree.findall('building'):
@@ -623,8 +663,10 @@ class BuildService():
                  'status': 'building'}
             for attr in ('hostarch', 'project', 'package', 'starttime'):
                 d[attr] = worker.get(attr)
-            d['target'] = '/'.join((worker.get('repository'), worker.get('arch')))
-            d['started'] = time.asctime(time.localtime(float(worker.get('starttime'))))
+            d['target'] = '/'.join((worker.get('repository'),
+                                    worker.get('arch')))
+            d['started'] = time.asctime(
+                time.localtime(float(worker.get('starttime'))))
             workerstatus.append(d)
         for worker in tree.findall('idle'):
             d = {'id': worker.get('workerid'),
@@ -640,34 +682,40 @@ class BuildService():
         Returns the number of jobs in the wait queue as a list of (arch, count)
         pairs
         """
-        url = core.makeurl(self.apiurl, ['build', '_workerstatus'])
-        f = core.http_GET(url)
+        url = osc.core.makeurl(self.apiurl, ['build', '_workerstatus'])
+        f = osc.core.http_GET(url)
         tree = ElementTree.parse(f).getroot()
         stats = []
         for worker in tree.findall('waiting'):
             stats.append((worker.get('arch'), int(worker.get('jobs'))))
         return stats
 
-    def getSubmitRequests(self, req_state=None, start_time=None, end_time=None, projects=None):
+    def getSubmitRequests(self, req_state=None, start_time=None,
+                          end_time=None, projects=None):
         """
         getSubmitRequests() -> list of dicts
 
         """
         xpath = ''
-        xpath = core.xpath_join(xpath, 'action/@type=\'submit\'')
+        xpath = osc.core.xpath_join(xpath, 'action/@type=\'submit\'')
 
         if req_state:
-            xpath = core.xpath_join(xpath, 'state/@name=\'%s\'' % req_state, op='and')
+            xpath = osc.core.xpath_join(xpath,
+                                        'state/@name=\'%s\'' % req_state,
+                                        op='and')
 
         if projects:
-            xpath_base=''
-            #build list of projects
+            xpath_base = ''
+            # build list of projects
             for i in projects:
-                xpath_base = core.xpath_join(xpath_base, 'action/target/@project=\'%s\'' % i, op='or')
-            xpath = core.xpath_join(xpath, xpath_base, op='and', nexpr_parentheses=True)
+                xpath_base = osc.core.xpath_join(
+                    xpath_base, 'action/target/@project=\'%s\'' % i, op='or')
+            xpath = osc.core.xpath_join(
+                xpath, xpath_base, op='and', nexpr_parentheses=True)
 
-        url = core.makeurl(self.apiurl, ['search', 'request', '?match=%s' %quote_plus(xpath)])
-        f = core.http_GET(url)
+        url = osc.core.makeurl(self.apiurl, ['search', 'request',
+                                             '?match=%s' % quote_plus(xpath)])
+        f = osc.core.http_GET(url)
         tree = ElementTree.parse(f).getroot()
         submitrequests = []
 
@@ -679,11 +727,11 @@ class BuildService():
                 continue
             if end_time and state.get('when') >= end_time:
                 continue
-            
+
             for action in req.findall('action'):
                 if action.get('type') != "submit":
                     continue
-               
+
                 d = {'id': int(req.get('id'))}
                 src = action.find('source')
                 d['srcproject'] = src.get('project')
@@ -693,9 +741,9 @@ class BuildService():
                 d['dstpackage'] = dest.get('package')
                 d['state'] = state.get('name')
                 d['when'] = state.get('when')
-                
+
                 submitrequests.append(d)
-                
+
         submitrequests.sort(key=lambda x: x['id'])
 
         return submitrequests
@@ -712,7 +760,8 @@ class BuildService():
         else:
             repo = None
             arch = None
-        return core.rebuild(self.apiurl, project, package, repo, arch, code)
+        return osc.core.rebuild(self.apiurl, project, package,
+                                repo, arch, code)
 
     def abortBuild(self, project, package=None, target=None):
         """
@@ -725,7 +774,7 @@ class BuildService():
         else:
             repo = None
             arch = None
-        return core.abortbuild(self.apiurl, project, package, arch, repo)
+        return osc.core.abortbuild(self.apiurl, project, package, arch, repo)
 
     def getBuildHistory(self, project, package, target):
         """
@@ -735,8 +784,9 @@ class BuildService():
         (time, srcmd5, rev, versrel, bcnt)
         """
         (repo, arch) = target.split('/')
-        u = core.makeurl(self.apiurl, ['build', project, repo, arch, package, '_history'])
-        f = core.http_GET(u)
+        u = osc.core.makeurl(self.apiurl, ['build', project, repo,
+                                           arch, package, '_history'])
+        f = osc.core.http_GET(u)
         root = ElementTree.parse(f).getroot()
 
         r = []
@@ -761,8 +811,9 @@ class BuildService():
         Each log is a tuple of the form (rev, srcmd5, version, time, user,
         comment)
         """
-        u = core.makeurl(self.apiurl, ['source', project, package, '_history'])
-        f = core.http_GET(u)
+        u = osc.core.makeurl(self.apiurl, ['source', project,
+                                           package, '_history'])
+        f = osc.core.http_GET(u)
         root = ElementTree.parse(f).getroot()
 
         r = []
@@ -791,12 +842,12 @@ class BuildService():
 
         Get XML metadata for project
         """
-        return ''.join(core.show_project_meta(self.apiurl, project))
+        return ''.join(osc.core.show_project_meta(self.apiurl, project))
 
     def getProjectData(self, project, tag):
         """
         getProjectData(project, tag) -> list
-        
+
         Return a string list if node has text, else return the values dict list
         """
         data = []
@@ -818,13 +869,13 @@ class BuildService():
     def getProjectPersons(self, project, role):
         """
         getProjectPersons(project, role) -> list
-        
+
         Return a userid list in this project with this role
         """
         userids = []
         persons = self.getProjectData(project, 'person')
         for person in persons:
-            if person.has_key('role') and person['role'] == role:
+            if 'role' in person and person['role'] == role:
                 userids.append(person['userid'])
 
         return userids
@@ -833,11 +884,12 @@ class BuildService():
         """
         getProjectDevel(project) -> tuple (devel_prj, devel_pkg)
 
-        Return the devel tuple of a project if it has the node, else return None
+        Return the devel tuple of a project if it has the node,
+        else return None
         """
         devels = self.getProjectData(project, 'devel')
         for devel in devels:
-            if devel.has_key('project') and devel.has_key('package'):
+            if 'project' in devel and 'package' in devel:
                 return (devel['project'], devel['package'])
 
         return None
@@ -845,14 +897,14 @@ class BuildService():
     def deleteProject(self, project):
         """
         deleteProject(project)
-        
+
         Delete the specific project
         """
         try:
-            core.delete_project(self.apiurl, project)
+            osc.core.delete_project(self.apiurl, project)
         except Exception:
             return False
-            
+
         return True
 
     def getPackageMeta(self, project, package):
@@ -861,12 +913,13 @@ class BuildService():
 
         Get XML metadata for package in project
         """
-        return ''.join(core.show_package_meta(self.apiurl, project, package))
+        return ''.join(osc.core.show_package_meta(self.apiurl,
+                                                  project, package))
 
     def getPackageData(self, project, package, tag):
         """
         getPackageData(project, package, tag) -> list
-        
+
         Return a string list if node has text, else return the values dict list
         """
         data = []
@@ -888,13 +941,13 @@ class BuildService():
     def getPackagePersons(self, project, package, role):
         """
         getPackagePersons(project, package, role) -> list
-        
+
         Return a userid list in the package with this role
         """
         userids = []
         persons = self.getPackageData(project, package, 'person')
         for person in persons:
-            if person.has_key('role') and person['role'] == role:
+            if 'role' in person and person['role'] == role:
                 userids.append(person['userid'])
 
         return userids
@@ -902,12 +955,13 @@ class BuildService():
     def getPackageDevel(self, project, package):
         """
         getPackageDevel(project, package) -> tuple (devel_prj, devel_pkg)
-        
-        Return the devel tuple of a package if it has the node, else return None
+
+        Return the devel tuple of a package if it has the node,
+        else return None
         """
         devels = self.getPackageData(project, package, 'devel')
         for devel in devels:
-            if devel.has_key('project') and devel.has_key('package'):
+            if 'project' in devel and 'package' in devel:
                 return (devel['project'], devel['package'])
 
         return None
@@ -915,14 +969,14 @@ class BuildService():
     def deletePackage(self, project, package):
         """
         deletePackage(project, package)
-        
+
         Delete the specific package in project
         """
         try:
-            core.delete_package(self.apiurl, project, package)
+            osc.core.delete_package(self.apiurl, project, package)
         except Exception:
             return False
-            
+
         return True
 
     def projectFlags(self, project):
@@ -951,8 +1005,8 @@ class BuildService():
 
         Get a list of userids who are maintainers of a project
         """
-        tree = ElementTree.fromstring(''.join(core.show_project_meta(self.apiurl,
-                                      project)))
+        tree = ElementTree.fromstring(
+            ''.join(osc.core.show_project_meta(self.apiurl, project)))
         maintainers = []
         for person in tree.findall('person'):
             if person.get('role') == "maintainer":
@@ -976,15 +1030,16 @@ class BuildService():
 
         returns source md5 of a package or None if it can't be determined atm
         """
-        query = { 'expand' : 1 }
+        query = {'expand': 1}
         if rev:
             query['rev'] = rev
         else:
             query['rev'] = 'latest'
 
-        u = core.makeurl(self.apiurl, ['source', project, package], query=query)
+        u = osc.core.makeurl(self.apiurl, ['source', project, package],
+                             query=query)
         try:
-            f = core.http_GET(u)
+            f = osc.core.http_GET(u)
         except HTTPError as e:
             if e.code == 400 and re.match('service .+ failed', e.reason):
                 return None
@@ -1020,7 +1075,8 @@ class BuildService():
         Get a list of repositories in a project
         """
         repos = []
-        tree = ElementTree.fromstring(''.join(core.show_project_meta(self.apiurl, project)))
+        tree = ElementTree.fromstring(
+            ''.join(osc.core.show_project_meta(self.apiurl, project)))
         for repo in tree.findall('repository'):
             repos.append(repo.get("name"))
         return repos
@@ -1032,11 +1088,13 @@ class BuildService():
         Get a list of targets for a repository in a project
         """
         targets = []
-        tree = ElementTree.fromstring(''.join(core.show_project_meta(self.apiurl, project)))
+        tree = ElementTree.fromstring(
+            ''.join(osc.core.show_project_meta(self.apiurl, project)))
         for repo in tree.findall('repository'):
             if repo.get("name") == repository:
                 for path in repo.findall("path"):
-                    targets.append("%s/%s" % (path.get("project"), path.get("repository")))
+                    targets.append("%s/%s" % (path.get("project"),
+                                              path.get("repository")))
         return targets
 
     def getRepositoryArchs(self, project, repository):
@@ -1046,7 +1104,8 @@ class BuildService():
         Get a list of architectures for a repository in a project
         """
         archs = []
-        tree = ElementTree.fromstring(''.join(core.show_project_meta(self.apiurl, project)))
+        tree = ElementTree.fromstring(
+            ''.join(osc.core.show_project_meta(self.apiurl, project)))
         for repo in tree.findall('repository'):
             if repo.get("name") == repository:
                 for arch in repo.findall("arch"):
@@ -1054,9 +1113,9 @@ class BuildService():
         return archs
 
     def isPackageSucceeded(self, project, repository, pkg, arch):
-        results = core.get_package_results(self.apiurl, project, pkg, 
-                                           repository = [repository],
-                                           arch=[arch])
+        results = osc.core.get_package_results(self.apiurl, project, pkg,
+                                               repository=[repository],
+                                               arch=[arch])
         for result in results:
             if result['code'] != "succeeded":
                 return False
@@ -1064,9 +1123,9 @@ class BuildService():
 
     def getPackageDepends(self, project, repository, pkg, arch, query):
         p = []
-        xml = core.get_dependson(self.apiurl, project, repository, arch, 
-                                 packages=[pkg], reverse=True)
-        tree =  ElementTree.fromstring(''.join(xml))
+        xml = osc.core.get_dependson(self.apiurl, project, repository, arch,
+                                     packages=[pkg], reverse=True)
+        tree = ElementTree.fromstring(''.join(xml))
         for package in tree.findall('package'):
             for dep in package.findall(query):
                 p.append(dep.text)
@@ -1074,20 +1133,21 @@ class BuildService():
 
     def getPackageSubpkgs(self, project, repository, pkg, arch):
         return self.getPackageDepends(project, repository, pkg, arch,
-                "subpkg")
+                                      "subpkg")
 
     def getPackageReverseDepends(self, project, repository, pkg, arch):
         return self.getPackageDepends(project, repository, pkg, arch,
-                "pkgdep")
+                                      "pkgdep")
 
     def getPackageRev(self, project, pkg):
-        xml = core.show_files_meta(self.apiurl, project, pkg, expand=False)
-        tree =  ElementTree.fromstring(''.join(xml))
+        xml = osc.core.show_files_meta(self.apiurl, project, pkg, expand=False)
+        tree = ElementTree.fromstring(''.join(xml))
         return tree.get("rev")
 
     def getServiceState(self, project, pkg):
         try:
-            xml = core.show_files_meta(self.apiurl, project, pkg, expand=True)
+            xml = osc.core.show_files_meta(self.apiurl, project, pkg,
+                                           expand=True)
         except HTTPError as e:
             # Check the known reasons in 400 response
             if e.code == 400:
@@ -1109,7 +1169,7 @@ class BuildService():
         if not revision:
             revision = self.getPackageRev(project, pkg)
 
-        return core.meta_get_filelist(self.apiurl, project, pkg,
+        return osc.core.meta_get_filelist(self.apiurl, project, pkg,
                                           expand=True, revision=revision)
 
     def getFile(self, project, pkg, filename, revision=None, expand=1):
@@ -1117,24 +1177,28 @@ class BuildService():
         if not revision:
             revision = self.getPackageRev(project, pkg)
 
-        q = {"expand":expand}
+        q = {"expand": expand}
 
         if revision:
-            q["rev"]=revision
+            q["rev"] = revision
 
-        u = core.makeurl(self.apiurl, ['source', project, pkg, quote(filename)],
+        u = osc.core.makeurl(self.apiurl,
+                             ['source', project, pkg, quote(filename)],
                              query=q)
-        if not revision: # There is going to be no revision but OBS returns misleading 400
-            raise HTTPError(u, 404, "No revision found so no file has been created", None, None)
+        if not revision:
+            # There is going to be no revision but OBS returns misleading 400
+            raise HTTPError(u, 404,
+                            "No revision found so no file has been created",
+                            None, None)
 
-        for chunks in core.streamfile(u):
+        for chunks in osc.core.streamfile(u):
             data += chunks
         return data
 
     def isType(self, name, is_type):
         try:
-            u = core.makeurl(self.apiurl, [is_type, name])
-            f = core.http_GET(u)
+            u = osc.core.makeurl(self.apiurl, [is_type, name])
+            osc.core.http_GET(u)
             return True
         except HTTPError as err:
             if err.code == 404:
@@ -1155,14 +1219,14 @@ class BuildService():
     def addReview(self, rid, msg, reviewer):
         reviewer_type = self.getType(reviewer)
         if reviewer_type == "unknown":
-            raise RuntimeError("Reviewer %s is not a person,"\
+            raise RuntimeError("Reviewer %s is not a person,"
                                " group or project" % reviewer)
 
         by_type = "by_%s" % reviewer_type
-        query = {'cmd': 'addreview', by_type : reviewer }
-        u = core.makeurl(self.apiurl, ['request', rid], query=query)
+        query = {'cmd': 'addreview', by_type: reviewer}
+        u = osc.core.makeurl(self.apiurl, ['request', rid], query=query)
         try:
-            f = core.http_POST(u, data=msg)
+            f = osc.core.http_POST(u, data=msg)
             root = ElementTree.parse(f).getroot()
         except HTTPError as e:
             if e.code == 400:
@@ -1177,27 +1241,28 @@ class BuildService():
             return False
 
     def setReviewState(self, rid, new_state, msg, user):
-        ret = core.change_review_state(self.apiurl, rid, new_state,
-                                        message=msg, by_user=user)
+        ret = osc.core.change_review_state(self.apiurl, rid, new_state,
+                                           message=msg, by_user=user)
         if ret == "ok":
             return True
         else:
             return False
 
     def setRequestState(self, rid, new_state, msg):
-         ret = core.change_request_state(self.apiurl, rid, new_state, message=msg)
-         if ret == "ok":
-             return True
-         else:
-             return False
+        ret = osc.core.change_request_state(self.apiurl,
+                                            rid, new_state, message=msg)
+        if ret == "ok":
+            return True
+        else:
+            return False
 
     def wipeBinaries(self, project):
-        core.wipebinaries(self.apiurl, project)
+        osc.core.wipebinaries(self.apiurl, project)
 
     def getPackageResults(self, project, repository, pkg, arch):
-        return core.get_package_results(self.apiurl, project, pkg,
-                                        repository=[repository],
-                                        arch=[arch])[0]
+        return osc.core.get_package_results(self.apiurl, project, pkg,
+                                            repository=[repository],
+                                            arch=[arch])[0]
 
     def getTargetRepo(self, prj, target_project, target_repository,
                       target_archs):
@@ -1217,7 +1282,7 @@ class BuildService():
         return False
 
     def getProjectResults(self, project):
-        results = core.show_prj_results_meta(self.apiurl, project)
+        results = osc.core.show_prj_results_meta(self.apiurl, project)
         if not results:
             return {}
         tree = ElementTree.fromstring(''.join(results))
@@ -1235,8 +1300,8 @@ class BuildService():
     def getRepoResults(self, project, repository):
         repo_results = {}
         prj_results = self.getProjectResults(project)
-        for repo_arch , result in prj_results.items():
-            repo , arch = repo_arch.split("/")
+        for repo_arch, result in prj_results.items():
+            repo, arch = repo_arch.split("/")
             if repo == repository:
                 repo_results[arch] = result
 
@@ -1244,10 +1309,12 @@ class BuildService():
 
     # for backward comapt
     def createProjectLink(self, link_source, repolinks, link_target, flags=[]):
-        return self.createProject(link_target, repolinks, links=[link_source], flags=flags)
+        return self.createProject(link_target, repolinks,
+                                  links=[link_source], flags=flags)
 
     def createProject(self, name, repos, links=None, paths=None, build=True,
-                      publish=True, mechanism="localdep", flags=[], maintainers=None,
+                      publish=True, mechanism="localdep",
+                      flags=[], maintainers=None,
                       desc="", title="", block="all"):
         repositories = ""
         for repo, archs in repos.iteritems():
@@ -1281,12 +1348,12 @@ class BuildService():
                 archs=arch_string,
                 block=block,
                 )
-        build_string = ""
-        #if not build:
-        #    build_string = "<build><disable/></build>"
-        #publish_string = ""
-        #if not publish:
-        #    publish_string = "<publish><disable/></publish>"
+        # build_string = ""
+        # if not build:
+        #     build_string = "<build><disable/></build>"
+        # publish_string = ""
+        # if not publish:
+        #     publish_string = "<publish><disable/></publish>"
         link_string = ""
         if links:
             for link in links:
@@ -1301,13 +1368,14 @@ class BuildService():
                 if flag.tag == "publish" and not publish:
                     etree.SubElement(flag, "disable")
                 flags_list.append(etree.tostring(flag))
-            
+
         flags_string = "\n".join(flags_list)
 
         maint_string = ""
         if maintainers:
             for maint in maintainers:
-                maint_string +='<person role="maintainer" userid="%s" />\n' % maint
+                maint_string += ('<person role="maintainer" userid="%s" />\n'
+                                 % maint)
 
         if title:
             title = cgi.escape(title)
@@ -1320,16 +1388,16 @@ class BuildService():
             title=title or name,
             description=desc,
             link=link_string,
-            #build=build_string,
-            #publish=publish_string,
+            # build=build_string,
+            # publish=publish_string,
             repositories=repositories,
             flags=flags_string,
             maintainers=maint_string,
             )
-        u = core.makeurl(self.apiurl, ['source', name, '_meta'])
+        u = osc.core.makeurl(self.apiurl, ['source', name, '_meta'])
 
         print(meta.encode('utf-8'))
-        f = core.http_PUT(u, data=meta)
+        f = osc.core.http_PUT(u, data=meta)
         root = ElementTree.parse(f).getroot()
         ret = root.get('code')
         if ret == "ok":
@@ -1338,29 +1406,34 @@ class BuildService():
             return False
 
     def projectAttributeExists(self, project, attribute):
-        u = core.makeurl(self.apiurl, ['source',
-                                       project,
-                                       '_attribute'])
-        f = core.http_GET(u)
+        u = osc.core.makeurl(self.apiurl, ['source',
+                                           project,
+                                           '_attribute'])
+        f = osc.core.http_GET(u)
         xml = ElementTree.parse(f).getroot()
         return attribute in [child.get('name') for child in xml.getchildren()]
 
-    def createProjectAttribute(self, project, attribute, package=None, namespace="OBS", values=None):
+    def createProjectAttribute(self, project, attribute, package=None,
+                               namespace="OBS", values=None):
         url = ['source', project]
-        if package: url.append(package)
+        if package:
+            url.append(package)
         url.append("_attribute")
-        u = core.makeurl(self.apiurl, url)
+        u = osc.core.makeurl(self.apiurl, url)
 
         values_xml = ""
         if values:
             for value in values:
                 values_xml += "<value>%s</value>\n" % value
-            values_xml.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-        xml = """
-        <attributes><attribute namespace='%s' name='%s'>%s</attribute></attributes>
-        """ % (namespace, attribute, values_xml)
+            values_xml.replace(
+                '&', '&amp;').replace(
+                    '<', '&lt;').replace(
+                        '>', '&gt;')
+        xml = ("\n        <attributes><attribute namespace='%s'"
+               "name='%s'>%s</attribute></attributes>\n"
+               % (namespace, attribute, values_xml))
         print(xml)
-        f = core.http_POST(u, data=xml)
+        f = osc.core.http_POST(u, data=xml)
         root = ElementTree.parse(f).getroot()
         ret = root.get('code')
         if ret == "ok":
@@ -1369,12 +1442,12 @@ class BuildService():
             return False
 
     def deleteProjectAttribute(self, project, attribute):
-        u = core.makeurl(self.apiurl, ['source',
+        u = osc.core.makeurl(self.apiurl, ['source',
                                            project,
                                            '_attribute',
-                                           'OBS:%s'%attribute])
+                                           'OBS:%s' % attribute])
         try:
-            f = core.http_DELETE(u)
+            f = osc.core.http_DELETE(u)
         except HTTPError:
             return False
         root = ElementTree.parse(f).getroot()
@@ -1383,6 +1456,7 @@ class BuildService():
             return True
         else:
             return False
+
     # Series of methods to convert some objects to dicts
     # in order to emit as json.
     # FIXME: should migrate to core
@@ -1391,13 +1465,14 @@ class BuildService():
         Includes Action diffs if action_diff is True
         """
         root = {}
-        if not req.reqid is None:
+        if req.reqid is not None:
             root['id'] = req.reqid
         for action in req.actions:
             if 'actions' not in root:
                 root['actions'] = []
-            root['actions'].append(self.action_to_dict(action, diff=action_diff))
-        if not req.state is None:
+            root['actions'].append(self.action_to_dict(action,
+                                                       diff=action_diff))
+        if req.state is not None:
             root['state'] = self.state_to_dict(req.state)
         for review in req.reviews:
             if 'reviews' not in root:
@@ -1415,17 +1490,17 @@ class BuildService():
 
     def action_to_dict(self, action, diff=False):
         """serialize Action object to a dict"""
-        root={}
+        root = {}
         root['type'] = action.type
 
-        for i in core.Action.type_args[action.type]:
+        for i in osc.core.Action.type_args[action.type]:
             prefix, attr = i.split('_', 1)
             val = getattr(action, i)
             if val is None:
                 continue
-            elm = core.Action.prefix_to_elm.get(prefix, prefix)
+            elm = osc.core.Action.prefix_to_elm.get(prefix, prefix)
             if elm not in root:
-                root[elm]={}
+                root[elm] = {}
             if prefix == 'opt':
                 root['options'][attr] = val
             else:
@@ -1441,17 +1516,16 @@ class BuildService():
                     root['diff'] = "Diff could not be decoded"
         return root
 
-
     def submit_action_diff(self, action):
-        """Replaces core.submit_action_diff() to work with new packages"""
+        """Replaces osc.core.submit_action_diff() to work with new packages"""
         new_pkg = False
         try:
             # if target package does not exists this is new package
-            core.meta_exists(apiurl=self.apiurl, metatype='pkg',
-                    create_new=False, path_args=(
-                        core.quote_plus(action.tgt_project),
-                        core.quote_plus(action.tgt_package)
-                    ))
+            osc.core.meta_exists(apiurl=self.apiurl, metatype='pkg',
+                                 create_new=False, path_args=(
+                                     osc.core.quote_plus(action.tgt_project),
+                                     osc.core.quote_plus(action.tgt_package)
+                                 ))
         except HTTPError as e:
             if e.code == 404:
                 new_pkg = True
@@ -1461,27 +1535,27 @@ class BuildService():
             action.tgt_package = None
 
         try:
-            return core.server_diff(self.apiurl, action.tgt_project,
-                    action.tgt_package, None, action.src_project,
-                    action.src_package, action.src_rev,
-                    unified=False, missingok=True)
+            return osc.core.server_diff(self.apiurl, action.tgt_project,
+                                        action.tgt_package, None,
+                                        action.src_project, action.src_package,
+                                        action.src_rev,
+                                        unified=False, missingok=True)
         except HTTPError as e:
             try:
-                reason = core.ET.fromstring(e.read()).find("summary").text
+                reason = osc.core.ET.fromstring(e.read()).find("summary").text
             except Exception:
                 reason = "Unknown reason"
-            return "Error getting diff %s/%s <-> %s/%s rev %s\n%s" % \
-                    (action.tgt_project, action.tgt_package, action.src_project,
-                            action.src_package, action.src_rev, reason)
-
+            return("Error getting diff %s/%s <-> %s/%s rev %s\n%s" %
+                   (action.tgt_project, action.tgt_package, action.src_project,
+                    action.src_package, action.src_rev, reason))
 
     def state_to_dict(self, state):
         """serialize Abstractstate object to a dict"""
-        root={}
+        root = {}
         root['state'] = state.get_node_name()
         for attr in state.get_node_attrs():
             val = getattr(state, attr)
-            if not val is None:
+            if val is not None:
                 root[attr] = val
         if state.get_comment():
             root['comment'] = state.get_comment()
@@ -1494,29 +1568,30 @@ class BuildService():
         return(self.state_to_dict(hist))
 
     def getProjectPatternsList(self, project):
-        url = core.makeurl(self.apiurl,
-                           ['source', project, '_pattern'])
-        response = core.http_GET(url)
+        url = osc.core.makeurl(self.apiurl,
+                               ['source', project, '_pattern'])
+        response = osc.core.http_GET(url)
         root = ElementTree.parse(response).getroot()
-        return [ node.get('name') for node in root.findall('entry') ]
-        
+        return [node.get('name') for node in root.findall('entry')]
+
     def setProjectPattern(self, project, pattern, name=None):
         with open(pattern) as body:
             if not name:
                 name = os.path.basename(pattern)
-            url = core.makeurl(self.apiurl,
-                               ['source', project, '_pattern', name])
-            response = core.http_PUT(url, data=body.read())
+            url = osc.core.makeurl(self.apiurl,
+                                   ['source', project, '_pattern', name])
+            response = osc.core.http_PUT(url, data=body.read())
             ret = ElementTree.parse(response).getroot().get('code')
             return ret == "ok"
 
     def deleteProjectPattern(self, project, name):
-        url = core.makeurl(self.apiurl,
-                           ['source', project, '_pattern', name])
-        core.http_DELETE(url)
+        url = osc.core.makeurl(self.apiurl,
+                               ['source', project, '_pattern', name])
+        osc.core.http_DELETE(url)
         return True
 
-    def expandPatterns(self, patterns, depth = 0, projects = [], patterns_prefetch=None, keep_patterns=False):
+    def expandPatterns(self, patterns, depth=0, projects=[],
+                       patterns_prefetch=None, keep_patterns=False):
         """ expands a list of patterns to it's content
 
             patterns(dict):
@@ -1528,11 +1603,12 @@ class BuildService():
                 (0 for none, -1 for infinite)
 
             projects(list):
-                list of project names to look at when expanding patterns recursively
+                list of project names to look at when expanding patterns
+                recursively
 
             patterns_prefetch(dict):
-                dict of lists, project name is key and list of patterns is value. Passed
-                by reference when recursively expanding
+                dict of lists, project name is key and list of patterns is
+                 value. Passed by reference when recursively expanding
 
             keep_patterns(bool):
                 nested pattern names are added to the requires in the result
@@ -1548,28 +1624,35 @@ class BuildService():
         ret = {}
         if depth:
             for _, prj in patterns.items():
-                if not prj in projects:
+                if prj not in projects:
                     projects.append(prj)
             if not patterns_prefetch:
-                patterns_prefetch={}
+                patterns_prefetch = {}
                 for prj in projects:
-                    patterns_prefetch.update({prj : self.getProjectPatternsList(prj)})
+                    patterns_prefetch.update(
+                        {prj: self.getProjectPatternsList(prj)})
 
         for pattern, prj in patterns.items():
             ret[pattern] = {}
-            xmlPattern = core.show_pattern_meta(self.apiurl, prj, pattern)
+            xmlPattern = osc.core.show_pattern_meta(self.apiurl, prj, pattern)
             root = ElementTree.fromstringlist(xmlPattern)
-            elements = ['conflicts', 'requires', 'recommends', 'suggests', 'provides']
+            elements = ['conflicts', 'requires', 'recommends',
+                        'suggests', 'provides']
             for element in elements:
                 rpmpgks = []
-                for item in root.findall('{http://linux.duke.edu/metadata/rpm}' + element):
-                    for rpmpgk in item.findall("{http://linux.duke.edu/metadata/rpm}entry"):
+                for item in root.findall(
+                        '{http://linux.duke.edu/metadata/rpm}' + element):
+                    for rpmpgk in item.findall(
+                            "{http://linux.duke.edu/metadata/rpm}entry"):
                         name = rpmpgk.attrib['name']
                         if depth and name.startswith('pattern:'):
-                            name = name.split(':',1)[1]
+                            name = name.split(':', 1)[1]
                             for prj in projects:
                                 if name in patterns_prefetch[prj]:
-                                    ret.update(self.expandPatterns({name : prj}, depth - 1, projects, patterns_prefetch, keep_patterns))
+                                    ret.update(self.expandPatterns(
+                                        {name: prj}, depth - 1,
+                                        projects, patterns_prefetch,
+                                        keep_patterns))
                             if not keep_patterns:
                                 continue
                         rpmpgks.append(name)
@@ -1577,11 +1660,11 @@ class BuildService():
                 ret[pattern].update({element: rpmpgks})
 
         return ret
-        
+
     def getGroupUsers(self, group):
-        u = core.makeurl(self.apiurl, ["group", group])
+        u = osc.core.makeurl(self.apiurl, ["group", group])
         try:
-            f = core.http_GET(u)
+            f = osc.core.http_GET(u)
             root = ElementTree.parse(f).getroot()
             users = []
             # weirdness in the OBS api person subelements are
@@ -1598,22 +1681,28 @@ class BuildService():
 
     def putFile(self, project, pkg, filename, filepath):
 
-        u = core.makeurl(self.apiurl, ['source', project, pkg, quote(filename)])
-        return core.http_PUT(u, file=filepath)
+        u = osc.core.makeurl(self.apiurl, ['source', project, pkg,
+                                           quote(filename)])
+        return osc.core.http_PUT(u, file=filepath)
 
     def getCreatePackage(self, dst_project, dst_package):
         # Check whether the dst pac is a new one
-        pkg = core.meta_exists(metatype = 'pkg',
-                        path_args = (core.quote_plus(dst_project), core.quote_plus(dst_package)),
-                        create_new = True,
-                        template_args = { "name" : dst_package, "user" : self.getUserName() },
-                        apiurl = self.apiurl)
-        u = core.makeurl(self.apiurl, ['source', dst_project, dst_package, "_meta"])
-        return core.http_PUT(u, data="".join(pkg))
+        pkg = osc.core.meta_exists(metatype='pkg',
+                                   path_args=(
+                                       osc.core.quote_plus(dst_project),
+                                       osc.core.quote_plus(dst_package)),
+                                   create_new=True,
+                                   template_args={"name": dst_package,
+                                                  "user": self.getUserName()},
+                                   apiurl=self.apiurl)
+        u = osc.core.makeurl(self.apiurl, ['source', dst_project, dst_package,
+                                           "_meta"])
+        return osc.core.http_PUT(u, data="".join(pkg))
 
     def setupService(self, dst_project, dst_package, service):
-        u = core.makeurl(self.apiurl, ['source', dst_project, dst_package, "_service"])
-        return core.http_PUT(u, data=service)
+        u = osc.core.makeurl(self.apiurl, ['source', dst_project, dst_package,
+                                           "_service"])
+        return osc.core.http_PUT(u, data=service)
 
 
 class ProjectFlags(object):
@@ -1664,9 +1753,11 @@ class ProjectFlags(object):
                     arch = node.get('arch')
 
                     if repository and arch:
-                        self.repositories[repository]['arches'][arch][flagtype] = flag2bool(node.tag)
+                        (self.repositories[repository]
+                         ['arches'][arch][flagtype]) = flag2bool(node.tag)
                     elif repository:
-                        self.repositories[repository][flagtype] = flag2bool(node.tag)
+                        self.repositories[repository][flagtype] = \
+                            flag2bool(node.tag)
                     elif arch:
                         self.arches[flagtype] = flag2bool(node.tag)
                     else:
@@ -1700,19 +1791,31 @@ class ProjectFlags(object):
             rulenodes = []
 
             # globals
-            if self.allrepositories[flagtype] != None:
-                rulenodes.append(ElementTree.Element(bool2flag(self.allrepositories[flagtype])))
+            if self.allrepositories[flagtype] is not None:
+                rulenodes.append(
+                    ElementTree.Element(bool2flag(
+                        self.allrepositories[flagtype])))
             for arch in self.arches:
-                if self.arches[arch][flagtype] != None:
-                    rulenodes.append(ElementTree.Element(bool2flag(self.arches[arch][flagtype]), arch=arch))
+                if self.arches[arch][flagtype] is not None:
+                    rulenodes.append(
+                        ElementTree.Element(bool2flag(
+                            self.arches[arch][flagtype]), arch=arch))
 
             # repositories
             for repository in self.repositories:
-                if self.repositories[repository][flagtype] != None:
-                    rulenodes.append(ElementTree.Element(bool2flag(self.repositories[repository][flagtype]), repository=repository))
+                if self.repositories[repository][flagtype] is not None:
+                    rulenodes.append(ElementTree.Element(bool2flag(
+                        self.repositories[repository][flagtype]),
+                        repository=repository))
                 for arch in self.repositories[repository]['arches']:
-                    if self.repositories[repository]['arches'][arch][flagtype] != None:
-                        rulenodes.append(ElementTree.Element(bool2flag(self.repositories[repository]['arches'][arch][flagtype]), arch=arch, repository=repository))
+                    if (self.repositories[repository]
+                            ['arches'][arch][flagtype]) is not None:
+                        rulenodes.append(
+                            ElementTree.Element(
+                                bool2flag(
+                                    (self.repositories[repository]
+                                     ['arches'][arch][flagtype])),
+                                arch=arch, repository=repository))
 
             # Add nodes to tree
             if rulenodes:
@@ -1724,4 +1827,3 @@ class ProjectFlags(object):
                     flagnode.append(rulenode)
 
         print(ElementTree.tostring(self.tree))
-

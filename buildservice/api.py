@@ -355,16 +355,21 @@ class BuildService():
             reqinfo += '  |__  ' + '\n  |__  '.join(src_fl)
 
             if yaml_file:
-                reqinfo += '\n\nThe content of the YAML file, %s:\n' % (yaml_file)
-                reqinfo += '===================================================================\n'
-                reqinfo += get_source_file_content(self.apiurl, src_project, src_package, yaml_file, src_rev)
-                reqinfo += '\n===================================================================\n'
+                reqinfo += (
+                    f'\n\nThe content of the YAML file, {yaml_file}:\n'
+                    + 67 * '=' + '\n' +
+                    get_source_file_content(self.apiurl,
+                                            src_project, src_package,
+                                            yaml_file, src_rev)
+                    + '\n' + 67 * '=' + '\n')
 
             if spec_file:
-                reqinfo += '\n\nThe content of the spec file, %s:\n' % (spec_file)
-                reqinfo += '===================================================================\n'
-                reqinfo += get_source_file_content(self.apiurl, src_project, src_package, spec_file, src_rev)
-                reqinfo += '\n===================================================================\n'
+                reqinfo += (
+                    f'\n\nThe content of the spec file, {spec_file}:\n'
+                    + 67 * '=' + '\n' +
+                    get_source_file_content(self.apiurl, src_project,
+                                            src_package, spec_file, src_rev)
+                    + '\n' + 67 * '=' + '\n')
             else:
                 reqinfo += '\n\nspec file NOT FOUND!\n'
 

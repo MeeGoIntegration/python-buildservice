@@ -820,10 +820,7 @@ class BuildService():
             srcmd5 = node.find('srcmd5').text
             version = node.find('version').text
             user = node.find('user').text
-            try:
-                comment = node.find('comment').text
-            except:
-                comment = '<no message>'
+            comment = node.find('comment').text or '<no message>'
             t = time.localtime(int(node.find('time').text))
             t = time.strftime('%Y-%m-%d %H:%M:%S', t)
 

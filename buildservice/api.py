@@ -136,16 +136,6 @@ class BuildService():
         self.copyPackage = osc.core.copy_pac
         self.addPerson = osc.core.addPerson
 
-    def getAPIServerList(self):
-        """getAPIServerList() -> list
-
-        Get list of API servers configured in .oscrc
-        """
-        apiservers = []
-        for host in osc.conf.config['api_host_options'].keys():
-            apiurl = "%s://%s" % (osc.conf.config['scheme'], host)
-        return apiservers
-
     # the following two alias api are added temporarily for compatible safe
     def is_new_package(self, dst_project, dst_package):
         return self.isNewPackage(dst_project, dst_package)

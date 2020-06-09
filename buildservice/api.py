@@ -22,7 +22,6 @@ import os
 import re
 import tempfile
 import time
-import urllib.request
 import cgi
 import xml.etree.cElementTree as ElementTree
 from urllib.error import HTTPError
@@ -157,7 +156,7 @@ class BuildService():
                         path_args = (core.quote_plus(dst_project), core.quote_plus(dst_package)),
                         create_new = False,
                         apiurl = self.apiurl)
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if e.code == 404:
                 new_pkg = True
             else:
@@ -320,7 +319,7 @@ class BuildService():
                         path_args = (core.quote_plus(tgt_project), core.quote_plus(tgt_package)),
                         create_new = False,
                         apiurl = self.apiurl)
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if e.code == 404:
                 new_pkg = True
             else:
@@ -371,7 +370,7 @@ class BuildService():
                     except UnicodeDecodeError:
                         pass
 
-            except urllib2.HTTPError as e:
+            except HTTPError as e:
                 e.osc_msg = 'Diff not possible'
 
         # the result, in unicode string
@@ -1004,7 +1003,7 @@ class BuildService():
         """
         try:
             tsrcmd5 = self.getPackageChecksum(tprj, tpkg)
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if e.code == 404:
                 return True
             else:
@@ -1453,7 +1452,7 @@ class BuildService():
                         core.quote_plus(action.tgt_project),
                         core.quote_plus(action.tgt_package)
                     ))
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if e.code == 404:
                 new_pkg = True
             else:
@@ -1466,7 +1465,7 @@ class BuildService():
                     action.tgt_package, None, action.src_project,
                     action.src_package, action.src_rev,
                     unified=False, missingok=True)
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             try:
                 reason = core.ET.fromstring(e.read()).find("summary").text
             except Exception:
@@ -1591,7 +1590,7 @@ class BuildService():
                 if person.get("userid"):
                     users.append(person.get("userid"))
             return users
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             if e.code == 404:
                 return []
             else:

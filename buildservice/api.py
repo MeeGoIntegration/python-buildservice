@@ -309,10 +309,8 @@ class BuildService():
             return content.decode('utf8')
 
         req = osc.core.get_request(self.apiurl, reqid)
-        try:
-            reqinfo = unicode(req)
-        except UnicodeEncodeError:
-            reqinfo = u''
+
+        reqinfo = str(req)  # Get the string representation of the request
 
         if not show_detail:
             return reqinfo

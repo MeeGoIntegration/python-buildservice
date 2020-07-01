@@ -25,7 +25,8 @@ import time
 import cgi
 import xml.etree.cElementTree as ElementTree
 from urllib.error import HTTPError
-import osc
+import osc.core
+import osc.conf
 from urllib.parse import quote, quote_plus
 
 prj_template = """\
@@ -72,6 +73,14 @@ def bool2flag(b):
         return 'enable'
     elif b is False:
         return 'disable'
+
+
+def try_decode(b):
+    "Try to decode a b'' as utf-8 then iso-8859-1"
+    try:
+        return b.decode('utf-8')
+    except UnicodeDecodeError:
+        return b.decode('iso-8859-1')
 
 
 class metafile:
@@ -286,8 +295,8 @@ class BuildService():
         return request
 
     def genRequestInfo(self, reqid, show_detail=True):
-        # helper routine to cat remote file
         def get_source_file_content(apiurl, prj, pac, path, rev):
+            "helper routine to cat remote file as str (not bytes)"
             revision = osc.core.show_upstream_xsrcmd5(apiurl, prj,
                                                       pac, revision=rev)
             if revision:
@@ -300,13 +309,13 @@ class BuildService():
                                   osc.core.pathname2url(path)],
                                  query=query)
 
-            content = ''
+            content = b''
             for buf in osc.core.streamfile(u, osc.core.http_GET,
                                            osc.core.BUFSIZE):
                 content += buf
 
             # return unicode str
-            return content.decode('utf8')
+            return try_decode(content)
 
         req = osc.core.get_request(self.apiurl, reqid)
 
@@ -520,7 +529,8 @@ class BuildService():
         return (results, targets)
 
     def getDiff(self, sprj, spkg, dprj, dpkg, rev):
-        diff = ''
+        "Package diff -> str"
+        diff = b''
         diff += osc.core.server_diff(self.apiurl, sprj, spkg, None,
                                      dprj, dpkg, rev, False, True)
         return diff
@@ -563,6 +573,8 @@ class BuildService():
         return status
 
     def getProjectDiff(self, src_project, dst_project):
+        ""
+        raise Exception("getProjectDiff doesn't work")
         packages = self.getPackageList(src_project)
         for src_package in packages:
             diff = osc.core.server_diff(self.apiurl,
@@ -690,7 +702,7 @@ class BuildService():
         getSubmitRequests() -> list of dicts
 
         """
-        xpath = ''
+        xpath = b''
         xpath = osc.core.xpath_join(xpath, 'action/@type=\'submit\'')
 
         if req_state:
@@ -699,7 +711,7 @@ class BuildService():
                                         op='and')
 
         if projects:
-            xpath_base = ''
+            xpath_base = b''
             # build list of projects
             for i in projects:
                 xpath_base = osc.core.xpath_join(
@@ -833,7 +845,8 @@ class BuildService():
 
         Get XML metadata for project
         """
-        return ''.join(osc.core.show_project_meta(self.apiurl, project))
+
+        return try_decode(b''.join(osc.core.show_project_meta(self.apiurl, project)))
 
     def getProjectData(self, project, tag):
         """
@@ -904,8 +917,8 @@ class BuildService():
 
         Get XML metadata for package in project
         """
-        return ''.join(osc.core.show_package_meta(self.apiurl,
-                                                  project, package))
+        return try_decode(b''.join(
+            osc.core.show_package_meta(self.apiurl, project, package)))
 
     def getPackageData(self, project, package, tag):
         """
@@ -997,7 +1010,8 @@ class BuildService():
         Get a list of userids who are maintainers of a project
         """
         tree = ElementTree.fromstring(
-            ''.join(osc.core.show_project_meta(self.apiurl, project)))
+            try_decode(b''.join(
+                osc.core.show_project_meta(self.apiurl, project))))
         maintainers = []
         for person in tree.findall('person'):
             if person.get('role') == "maintainer":
@@ -1066,8 +1080,8 @@ class BuildService():
         Get a list of repositories in a project
         """
         repos = []
-        tree = ElementTree.fromstring(
-            ''.join(osc.core.show_project_meta(self.apiurl, project)))
+        tree = ElementTree.fromstring(try_decode(
+            b''.join(osc.core.show_project_meta(self.apiurl, project))))
         for repo in tree.findall('repository'):
             repos.append(repo.get("name"))
         return repos
@@ -1079,8 +1093,8 @@ class BuildService():
         Get a list of targets for a repository in a project
         """
         targets = []
-        tree = ElementTree.fromstring(
-            ''.join(osc.core.show_project_meta(self.apiurl, project)))
+        tree = ElementTree.fromstring(try_decode(
+            b''.join(osc.core.show_project_meta(self.apiurl, project))))
         for repo in tree.findall('repository'):
             if repo.get("name") == repository:
                 for path in repo.findall("path"):
@@ -1095,8 +1109,8 @@ class BuildService():
         Get a list of architectures for a repository in a project
         """
         archs = []
-        tree = ElementTree.fromstring(
-            ''.join(osc.core.show_project_meta(self.apiurl, project)))
+        tree = ElementTree.fromstring(try_decode(
+            b''.join(osc.core.show_project_meta(self.apiurl, project))))
         for repo in tree.findall('repository'):
             if repo.get("name") == repository:
                 for arch in repo.findall("arch"):
@@ -1116,7 +1130,7 @@ class BuildService():
         p = []
         xml = osc.core.get_dependson(self.apiurl, project, repository, arch,
                                      packages=[pkg], reverse=True)
-        tree = ElementTree.fromstring(''.join(xml))
+        tree = ElementTree.fromstring(try_decode(b''.join(xml)))
         for package in tree.findall('package'):
             for dep in package.findall(query):
                 p.append(dep.text)
@@ -1132,7 +1146,7 @@ class BuildService():
 
     def getPackageRev(self, project, pkg):
         xml = osc.core.show_files_meta(self.apiurl, project, pkg, expand=False)
-        tree = ElementTree.fromstring(''.join(xml))
+        tree = ElementTree.fromstring(try_decode(b''.join(xml)))
         return tree.get("rev")
 
     def getServiceState(self, project, pkg):
@@ -1149,7 +1163,7 @@ class BuildService():
             # Raise other errors
             raise
 
-        tree = ElementTree.fromstring(''.join(xml))
+        tree = ElementTree.fromstring(try_decode(b''.join(xml)))
         status = "succeeded"
         for node in tree.findall("serviceinfo"):
             status = node.get("code")
@@ -1164,7 +1178,8 @@ class BuildService():
                                           expand=True, revision=revision)
 
     def getFile(self, project, pkg, filename, revision=None, expand=1):
-        data = ""
+        "Returns contents of filename as bytes"
+        data = b''
         if not revision:
             revision = self.getPackageRev(project, pkg)
 
@@ -1276,10 +1291,10 @@ class BuildService():
         results = osc.core.show_prj_results_meta(self.apiurl, project)
         if not results:
             return {}
-        tree = ElementTree.fromstring(''.join(results))
+        tree = ElementTree.fromstring(try_decode(b''.join(results)))
         results = {}
         for result in tree.findall('result'):
-            target = '/'.join((result.get('repository'), result.get('arch')))
+            target = f"{result.get('repository')}/{result.get('arch')}"
             results[target] = {}
             for status in result:
                 pkg = status.get("package")

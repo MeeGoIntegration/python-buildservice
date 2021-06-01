@@ -1091,6 +1091,7 @@ class BuildService():
         getRepositoryTargets(project, repository) -> list
 
         Get a list of targets for a repository in a project
+        (These are the <path> elements for each <repo>)
         """
         targets = []
         tree = ElementTree.fromstring(try_decode(
@@ -1146,7 +1147,7 @@ class BuildService():
 
     def getPackageRev(self, project, pkg):
         xml = osc.core.show_files_meta(self.apiurl, project, pkg, expand=False)
-        tree = ElementTree.fromstring(try_decode(b''.join(xml)))
+        tree = ElementTree.fromstring(xml)
         return tree.get("rev")
 
     def getServiceState(self, project, pkg):

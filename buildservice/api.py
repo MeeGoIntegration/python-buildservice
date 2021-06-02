@@ -128,8 +128,9 @@ class BuildService():
         except OSError as e:
             if e.errno == 1:
                 # permission problem, should be the chmod(0600) issue
-                raise RuntimeError('Current user has no write permission for '
-                                   'specified oscrc: %s' % oscrc)
+                print('Current user has no write permission for '
+                                   'specified oscrc: %s\n%s' % oscrc, e)
+                raise
 
             raise  # else
 

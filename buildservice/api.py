@@ -492,7 +492,7 @@ class BuildService():
         results = osc.core.show_prj_results_meta(self.apiurl, project)
         if not results:
             return {}
-        tree = ElementTree.fromstring(''.join(results))
+        tree = ElementTree.fromstring(''.join([try_decode(r) for r in results]))
         for result in tree.findall('result'):
             target = '%s/%s' % (result.get('repository'), result.get('arch'))
             if result.get("dirty") == "true":

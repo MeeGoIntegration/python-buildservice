@@ -1367,9 +1367,11 @@ class BuildService():
             for link in links:
                 link_string += '<link project="%s"/>\n' % link
 
-        from lxml import etree
         flags_list = []
         if flags:
+            # Moved this here so it will bite you when you try and use
+            # flags because that's how crappy life is sometimes :D
+            from lxml import etree
             for flag in flags:
                 if flag.tag == "build" and not build:
                     etree.SubElement(flag, "disable")

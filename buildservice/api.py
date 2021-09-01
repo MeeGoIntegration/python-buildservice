@@ -899,14 +899,15 @@ class BuildService():
 
         return None
 
-    def deleteProject(self, project):
+    def deleteProject(self, project, force=False, msg=None):
         """
         deleteProject(project)
 
         Delete the specific project
         """
         try:
-            osc.core.delete_project(self.apiurl, project)
+            osc.core.delete_project(self.apiurl, project,
+                                    force=force, msg=msg)
         except Exception:
             return False
 

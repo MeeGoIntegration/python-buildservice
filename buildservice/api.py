@@ -1325,7 +1325,7 @@ class BuildService():
                       flags=[], maintainers=None,
                       desc="", title="", block="all"):
         repositories = ""
-        for repo, archs in repos.iteritems():
+        for repo, archs in repos.items():
             arch_string = ""
             for arch in archs:
                 arch_string += "    <arch>%s</arch>" % arch

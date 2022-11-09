@@ -587,9 +587,9 @@ class BuildService():
                 package, binary, cmd])
         f = core.http_GET(u)
         fileinfo = ElementTree.parse(f).getroot()
-        result = {"provides": []}
+        result = {"provides": [], "requires": []}
         for node in fileinfo.getchildren():
-            if node.tag == "provides":
+            if node.tag in result and isinstance(result[node.tag], list):
                 result[node.tag].append(node.text)
             else:
                 result[node.tag] = node.text

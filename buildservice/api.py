@@ -22,12 +22,12 @@ import os
 import re
 import tempfile
 import time
-import urllib2
+import urllib.request
 import cgi
 import xml.etree.cElementTree as ElementTree
-from urllib2 import HTTPError
+from urllib.error import HTTPError
 from osc import conf, core
-from urllib import quote, quote_plus
+from urllib.parse import quote, quote_plus
 
 prj_template = """\
 <project name="%(name)s">
@@ -114,10 +114,10 @@ class BuildService():
             else:
                 conf.get_config()
 
-        except OSError, e:
+        except OSError as e:
             if e.errno == 1:
                 # permission problem, should be the chmod(0600) issue
-                raise RuntimeError, 'Current user has no write permission for specified oscrc: %s' % oscrc
+                raise RuntimeError('Current user has no write permission for specified oscrc: %s' % oscrc)
 
             raise # else
 
@@ -127,7 +127,7 @@ class BuildService():
             self.apiurl = conf.config['apiurl']
 
         if not self.apiurl:
-            raise RuntimeError, 'No apiurl "%s" found in %s' % (apiurl, oscrc)
+            raise RuntimeError('No apiurl "%s" found in %s' % (apiurl, oscrc))
 
         # Add a couple of method aliases
         self.copyPackage = core.copy_pac
@@ -157,7 +157,7 @@ class BuildService():
                         path_args = (core.quote_plus(dst_project), core.quote_plus(dst_package)),
                         create_new = False,
                         apiurl = self.apiurl)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code == 404:
                 new_pkg = True
             else:
@@ -203,7 +203,7 @@ class BuildService():
         request.description = description
         request.state = core.RequestState(state)
 
-	supsersedereqs = []
+        supsersedereqs = []
         for item in options_list:
             if item['action'] == "submit":
                 request.add_action(item['action'],
@@ -215,7 +215,7 @@ class BuildService():
                                    **kwargs)
 
                 if supersede == True:
-	            supsersedereqs.extend(core.get_exact_request_list(self.apiurl, item['src_project'],
+                    supsersedereqs.extend(core.get_exact_request_list(self.apiurl, item['src_project'],
                                                                       item['tgt_project'], item['src_package'],
                                                                       item['tgt_package'], req_type='submit',
                                                                       req_state=['new','review', 'declined']))
@@ -272,7 +272,7 @@ class BuildService():
             for req in supsersedereqs:
                 if req.reqid not in processed:
                     processed.append(req.reqid)
-                    print "req.reqid: %s - new ID: %s\n"%(req.reqid, request.reqid)
+                    print("req.reqid: %s - new ID: %s\n"%(req.reqid, request.reqid))
                     core.change_request_state(self.apiurl, req.reqid,
                                               'superseded',
                                               'superseded by %s' % request.reqid,
@@ -320,7 +320,7 @@ class BuildService():
                         path_args = (core.quote_plus(tgt_project), core.quote_plus(tgt_package)),
                         create_new = False,
                         apiurl = self.apiurl)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code == 404:
                 new_pkg = True
             else:
@@ -371,7 +371,7 @@ class BuildService():
                     except UnicodeDecodeError:
                         pass
 
-            except urllib2.HTTPError, e:
+            except urllib2.HTTPError as e:
                 e.osc_msg = 'Diff not possible'
 
         # the result, in unicode string
@@ -541,7 +541,7 @@ class BuildService():
             diff = core.server_diff(self.apiurl,
                                 dst_project, src_package, None,
                                 src_project, src_package, None, False)
-            print diff
+            print(diff)
 
     def getPackageList(self, prj, deleted=None):
         query = {}
@@ -699,7 +699,7 @@ class BuildService():
                 
         submitrequests.sort(key=lambda x: x['id'])
 
-	return submitrequests
+        return submitrequests
 
     def rebuild(self, project, package, target=None, code=None):
         """
@@ -1004,7 +1004,7 @@ class BuildService():
         """
         try:
             tsrcmd5 = self.getPackageChecksum(tprj, tpkg)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code == 404:
                 return True
             else:
@@ -1329,7 +1329,7 @@ class BuildService():
             )
         u = core.makeurl(self.apiurl, ['source', name, '_meta'])
 
-        print meta.encode('utf-8')
+        print(meta.encode('utf-8'))
         f = core.http_PUT(u, data=meta)
         root = ElementTree.parse(f).getroot()
         ret = root.get('code')
@@ -1360,7 +1360,7 @@ class BuildService():
         xml = """
         <attributes><attribute namespace='%s' name='%s'>%s</attribute></attributes>
         """ % (namespace, attribute, values_xml)
-        print xml
+        print(xml)
         f = core.http_POST(u, data=xml)
         root = ElementTree.parse(f).getroot()
         ret = root.get('code')
@@ -1453,7 +1453,7 @@ class BuildService():
                         core.quote_plus(action.tgt_project),
                         core.quote_plus(action.tgt_package)
                     ))
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             if e.code == 404:
                 new_pkg = True
             else:
@@ -1466,7 +1466,7 @@ class BuildService():
                     action.tgt_package, None, action.src_project,
                     action.src_package, action.src_rev,
                     unified=False, missingok=True)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             try:
                 reason = core.ET.fromstring(e.read()).find("summary").text
             except Exception:
@@ -1724,5 +1724,5 @@ class ProjectFlags(object):
                 for rulenode in rulenodes:
                     flagnode.append(rulenode)
 
-        print ElementTree.tostring(self.tree)
+        print(ElementTree.tostring(self.tree))
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 from buildservice import BuildService
 from os.path import expanduser
@@ -26,12 +26,12 @@ if not testfile:
 
 bs = BuildService(apiurl,oscrc)
 
-print "**********************************"
-print "Our test settings:"
-print "API: "+apiurl
-print "OSCRC: "+oscrc
-print "Test project 1: "+testprj
-print "Test project 2: "+testprj2
-print "Test package: "+testpkg
-print "Test file: "+testfile
-print "**********************************"
+print("**********************************")
+print("Our test settings:")
+print("API: "+apiurl)
+print("OSCRC: "+oscrc)
+print("Test project 1: "+testprj)
+print("Test project 2: "+testprj2)
+print("Test package: "+testpkg)
+print("Test file: "+testfile)
+print("**********************************")

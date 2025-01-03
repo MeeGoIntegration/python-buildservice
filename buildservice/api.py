@@ -43,7 +43,7 @@ prj_template = """\
 </project>
 """
 
-repo_template = """  <repository name="%(repository)s" %(mechanism)s block="%(block)s">
+repo_template = """  <repository name="%(repository)s" %(mechanism)s block="%(block)s" rebuild="%(rebuild)s">
 %(paths)s
 %(archs)s
   </repository>\n"""
@@ -1249,7 +1249,7 @@ class BuildService():
 
     def createProject(self, name, repos, links=None, paths=None, build=True,
                       publish=True, mechanism="localdep", flags=[], maintainers=None,
-                      desc="", title="", block="all"):
+                      desc="", title="", block="all", rebuild="transitive"):
         repositories = ""
         for repo, archs in repos.iteritems():
             arch_string = ""
@@ -1281,6 +1281,7 @@ class BuildService():
                 paths="\n".join(path_elements),
                 archs=arch_string,
                 block=block,
+                rebuild=rebuild,
                 )
         build_string = ""
         #if not build:
